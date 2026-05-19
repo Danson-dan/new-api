@@ -64,13 +64,13 @@ export function ConfigDrawer() {
             variant='ghost'
             aria-label={t('Open theme settings')}
             aria-describedby='config-drawer-description'
-            className='rounded-full max-md:hidden'
+            className='rounded-xl max-md:hidden h-9 w-9 transition-all duration-300 hover:bg-primary/10 hover:shadow-md hover:shadow-primary/5'
           />
         }
       >
-        <Palette className='size-[1.2rem]' aria-hidden='true' />
+        <Palette className='size-[1.2rem] text-primary' aria-hidden='true' />
       </SheetTrigger>
-      <SheetContent className='flex w-full flex-col sm:max-w-md'>
+      <SheetContent className='flex w-full flex-col sm:max-w-md overflow-hidden rounded-l-2xl border-l-0'>
         <SheetHeader className='pb-0 text-start'>
           <SheetTitle>{t('Theme Settings')}</SheetTitle>
           <SheetDescription id='config-drawer-description'>

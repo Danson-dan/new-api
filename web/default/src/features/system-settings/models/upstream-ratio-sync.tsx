@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   fetchUpstreamRatios,
   getUpstreamChannels,
+  saveUpstreamPrice,
   updateSystemOption,
 } from '../api'
 import type {
@@ -409,7 +410,22 @@ export function UpstreamRatioSync({ modelRatios }: UpstreamRatioSyncProps) {
 
       return new Promise<boolean>((resolve) => {
         syncMutate(updates, {
-          onSuccess: () => resolve(true),
+          onSuccess: async () => {
+            // 同步后将各模型的 model_ratio * 2 作为上游正价保存
+            const upstreamPriceData: Record<string, number> = {}
+            const currentModelRatios = finalRatios.ModelRatio || {}
+            for (const [model, ratio] of Object.entries(currentModelRatios)) {
+              if (typeof ratio === 'number') {
+                upstreamPriceData[model] = ratio * 2.0
+              }
+            }
+            try {
+              await saveUpstreamPrice(upstreamPriceData)
+            } catch (_) {
+              // 忽略上游正价保存失败
+            }
+            resolve(true)
+          },
           onError: () => resolve(false),
         })
       })

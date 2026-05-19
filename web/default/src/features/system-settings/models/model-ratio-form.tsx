@@ -1,7 +1,9 @@
 import { memo, useCallback, useState } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
-import { Code2, Eye } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Code2, Eye, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -14,6 +16,7 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { syncUpstreamModelPricing } from '../api'
 import { ModelRatioVisualEditor } from './model-ratio-visual-editor'
 
 type ModelFormValues = {
@@ -25,6 +28,10 @@ type ModelFormValues = {
   ImageRatio: string
   AudioRatio: string
   AudioCompletionRatio: string
+  DisplayPrice: string
+  UpstreamPrice: string
+  DisplayDiscount: string
+  ActualMarkup: string
   ExposeRatioEnabled: boolean
   BillingMode: string
   BillingExpr: string
@@ -46,7 +53,28 @@ export const ModelRatioForm = memo(function ModelRatioForm({
   isResetting,
 }: ModelRatioFormProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [editMode, setEditMode] = useState<'visual' | 'json'>('visual')
+
+  const syncPricingMutation = useMutation({
+    mutationFn: syncUpstreamModelPricing,
+    onSuccess: (data) => {
+      if (data.success) {
+        const d = data.data || {}
+        toast.success(
+          t('Sync completed! Synced {{synced}} model prices.', {
+            synced: d.synced_models || 0,
+          })
+        )
+        queryClient.invalidateQueries({ queryKey: ['system-options'] })
+      } else {
+        toast.error(data.message || t('Sync failed'))
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('Sync failed'))
+    },
+  })
 
   const handleFieldChange = useCallback(
     (field: keyof ModelFormValues, value: string) => {
@@ -64,7 +92,20 @@ export const ModelRatioForm = memo(function ModelRatioForm({
 
   return (
     <div className='space-y-6'>
-      <div className='flex justify-end'>
+      <div className='flex justify-between'>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => syncPricingMutation.mutate()}
+          disabled={syncPricingMutation.isPending}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${syncPricingMutation.isPending ? 'animate-spin' : ''}`}
+          />
+          {syncPricingMutation.isPending
+            ? t('Syncing...')
+            : t('Sync upstream model pricing')}
+        </Button>
         <Button variant='outline' size='sm' onClick={toggleEditMode}>
           {editMode === 'visual' ? (
             <>
@@ -92,12 +133,20 @@ export const ModelRatioForm = memo(function ModelRatioForm({
               imageRatio={form.watch('ImageRatio')}
               audioRatio={form.watch('AudioRatio')}
               audioCompletionRatio={form.watch('AudioCompletionRatio')}
+              displayPrice={form.watch('DisplayPrice')}
+              upstreamPrice={form.watch('UpstreamPrice')}
+              displayDiscount={form.watch('DisplayDiscount')}
+              actualMarkup={form.watch('ActualMarkup')}
               billingMode={form.watch('BillingMode')}
               billingExpr={form.watch('BillingExpr')}
               onChange={(field, value) => {
                 const fieldMap: Record<string, keyof ModelFormValues> = {
                   'billing_setting.billing_mode': 'BillingMode',
                   'billing_setting.billing_expr': 'BillingExpr',
+                  DisplayPrice: 'DisplayPrice',
+                  UpstreamPrice: 'UpstreamPrice',
+                  DisplayDiscount: 'DisplayDiscount',
+                  ActualMarkup: 'ActualMarkup',
                 }
                 const formField =
                   fieldMap[field] || (field as keyof ModelFormValues)
@@ -289,6 +338,82 @@ export const ModelRatioForm = memo(function ModelRatioForm({
                   <FormDescription>
                     {t(
                       'Ratio applied to audio completions for streaming models.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='DisplayPrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Display price')}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={6} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'JSON map of model → display price ($/1M tokens). If configured, this price is shown to users instead of the calculated price from ModelRatio. This allows displaying a lower price while charging based on actual costs.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='UpstreamPrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('正价 (Upstream Price)')}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={6} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'JSON map of model → upstream price ($/1M tokens). Auto-populated after upstream sync (model_ratio × 2). Can be manually edited.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='DisplayDiscount'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('显示折扣 (Display Discount)')}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={6} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'JSON map of model → discount percentage (e.g. 85 = 8.5折). 现价 = 正价 × 折扣 / 100. Model-level overrides global default.'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='ActualMarkup'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('实际加价 (Actual Markup)')}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={6} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'JSON map of model → markup ratio (e.g. 1.3 = +30%). 实际扣费 = 正价 × 加价倍率. Model-level overrides global default.'
                     )}
                   </FormDescription>
                   <FormMessage />

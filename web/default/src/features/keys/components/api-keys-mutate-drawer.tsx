@@ -78,14 +78,14 @@ function ApiKeyFormSection(props: ApiKeyFormSectionProps) {
   const Icon = props.icon
 
   return (
-    <section className='bg-card rounded-lg border'>
-      <div className='flex items-center gap-2.5 border-b px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3'>
-        <div className='bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border sm:size-10'>
-          <Icon className='size-4 sm:size-5' />
+    <section className='overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm'>
+      <div className='flex items-center gap-2.5 border-b border-border/50 bg-gradient-to-r from-card to-card/50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3'>
+        <div className='bg-gradient-primary flex size-8 shrink-0 items-center justify-center rounded-lg shadow-md shadow-primary/20 sm:size-10'>
+          <Icon className='size-4 text-white sm:size-5' />
         </div>
         <div className='min-w-0'>
-          <h3 className='text-sm leading-none font-medium'>{props.title}</h3>
-          <p className='text-muted-foreground mt-0.5 text-xs sm:mt-1'>
+          <h3 className='text-sm font-semibold leading-none'>{props.title}</h3>
+          <p className='text-muted-foreground/70 mt-0.5 text-xs sm:mt-1'>
             {props.description}
           </p>
         </div>
@@ -488,29 +488,29 @@ export function ApiKeysMutateDrawer({
             </ApiKeyFormSection>
 
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-              <section className='bg-card rounded-lg border'>
+              <section className='overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm'>
                 <CollapsibleTrigger
                   render={
                     <button
                       type='button'
-                      className='hover:bg-muted/50 flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors sm:gap-3 sm:px-4 sm:py-3'
+                      className='flex w-full items-center gap-2.5 border-b border-border/50 bg-gradient-to-r from-card to-card/50 px-3 py-2.5 text-left transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10 sm:gap-3 sm:px-4 sm:py-3'
                     />
                   }
                 >
-                  <div className='bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border sm:size-10'>
-                    <Settings2 className='size-4 sm:size-5' />
+                  <div className='bg-gradient-info flex size-8 shrink-0 items-center justify-center rounded-lg shadow-md shadow-info/20 sm:size-10'>
+                    <Settings2 className='size-4 text-white sm:size-5' />
                   </div>
                   <div className='min-w-0 flex-1'>
-                    <h3 className='text-sm leading-none font-medium'>
+                    <h3 className='text-sm font-semibold leading-none'>
                       {t('Advanced Settings')}
                     </h3>
-                    <p className='text-muted-foreground mt-1 text-xs'>
+                    <p className='text-muted-foreground/70 mt-1 text-xs'>
                       {t('Set API key access restrictions')}
                     </p>
                   </div>
                   <ChevronDown
                     className={cn(
-                      'text-muted-foreground size-4 shrink-0 transition-transform',
+                      'text-muted-foreground size-4 shrink-0 transition-transform duration-300',
                       advancedOpen && 'rotate-180'
                     )}
                   />

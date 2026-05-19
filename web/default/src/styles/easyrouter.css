@@ -1,0 +1,523 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格组件样式 - 渐变按钮、卡片、特效
+ */
+
+/* ============================================================================
+   Gradient Button Styles
+   ============================================================================ */
+.btn-gradient {
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-primary-hover);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-primary);
+}
+
+.btn-gradient:hover::before {
+  opacity: 1;
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
+
+.btn-gradient span,
+.btn-gradient svg {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-gradient-outline {
+  background: transparent;
+  border: 2px solid transparent;
+  background-image: linear-gradient(var(--card), var(--card)), var(--gradient-card-border);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient-outline:hover {
+  background-image: linear-gradient(var(--card), var(--card)), var(--gradient-card-border-hover);
+  box-shadow: var(--glow-primary);
+  transform: translateY(-2px);
+}
+
+/* ============================================================================
+   Gradient Card Styles
+   ============================================================================ */
+.card-gradient {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.card-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--gradient-card-border);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-gradient:hover::before {
+  opacity: 1;
+}
+
+.card-gradient:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Card with subtle gradient background */
+.card-gradient-bg {
+  background: linear-gradient(135deg, var(--card) 0%, var(--muted) 100%);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+
+.card-gradient-bg:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ============================================================================
+   Stat Card Styles (for Dashboard)
+   ============================================================================ */
+.stat-card {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 120px;
+  background: var(--gradient-accent-soft);
+  border-radius: 0 0 0 100%;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.stat-card:hover::after {
+  opacity: 0.8;
+  width: 150px;
+  height: 150px;
+}
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card-label {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin-top: 0.25rem;
+}
+
+/* ============================================================================
+   Gradient Text Styles
+   ============================================================================ */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================================================
+   Glow Effects
+   ============================================================================ */
+.glow-primary {
+  box-shadow: var(--glow-primary);
+}
+
+.glow-primary-strong {
+  box-shadow: var(--glow-primary-strong);
+}
+
+.glow-accent {
+  box-shadow: var(--glow-accent);
+}
+
+/* ============================================================================
+   Animated Background
+   ============================================================================ */
+.bg-gradient-animated {
+  background: linear-gradient(-45deg, #FF6B35, #4A90D9, #8B5CF6, #FF6B35);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ============================================================================
+   Badge / Tag Styles
+   ============================================================================ */
+.badge-gradient {
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-gradient-outline {
+  background: transparent;
+  border: 1px solid transparent;
+  background-image: linear-gradient(var(--muted), var(--muted)), var(--gradient-card-border);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   Sidebar Styles
+   ============================================================================ */
+.sidebar-gradient {
+  background: linear-gradient(180deg, var(--sidebar) 0%, color-mix(in oklch, var(--sidebar), var(--primary) 5%) 100%);
+}
+
+/* Sidebar Container Enhancement */
+[data-slot='sidebar-inner'] {
+  background: linear-gradient(180deg, var(--sidebar) 0%, color-mix(in oklch, var(--sidebar), var(--primary) 3%) 100%);
+  border-radius: var(--radius-card);
+}
+
+/* Active Navigation Item with Gradient */
+[data-sidebar='menu-item'][data-open='true'] [data-slot='sidebar-menu-button'],
+.sidebar-item-active {
+  background: var(--gradient-primary) !important;
+  color: var(--primary-foreground) !important;
+  box-shadow: var(--glow-primary);
+}
+
+[data-sidebar='menu-item'][data-open='true'] [data-slot='sidebar-menu-button']:hover,
+.sidebar-item-active:hover {
+  background: var(--gradient-primary-hover) !important;
+}
+
+/* Sidebar Menu Button Hover Effect */
+[data-slot='sidebar-menu-button']:hover {
+  background: var(--gradient-accent-soft) !important;
+  transform: translateX(4px);
+}
+
+/* Sidebar Group Label */
+[data-slot='sidebar-group-label'] {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--primary);
+}
+
+/* Sidebar Separator */
+[data-slot='sidebar-separator'] {
+  background: var(--gradient-card-border);
+  height: 2px;
+  margin: 0.5rem 0;
+}
+
+/* Sidebar Footer */
+[data-slot='sidebar-footer'] {
+  padding: 1rem;
+  border-top: 1px solid var(--sidebar-border);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in oklch, var(--sidebar), var(--primary) 5%) 100%);
+}
+
+/* Sidebar Quick Actions */
+.sidebar-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-accent-soft);
+  border: 1px solid var(--gradient-card-border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.sidebar-quick-action:hover {
+  background: var(--gradient-primary);
+  transform: translateX(4px);
+  box-shadow: var(--glow-primary);
+}
+
+.sidebar-quick-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+}
+
+.sidebar-quick-action:hover .sidebar-quick-action-icon {
+  background: var(--primary-foreground);
+  color: var(--primary);
+}
+
+/* ============================================================================
+   Input Styles
+   ============================================================================ */
+.input-gradient-border {
+  position: relative;
+}
+
+.input-gradient-border::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.input-gradient-border:focus-within::after {
+  opacity: 1;
+}
+
+/* ============================================================================
+   Progress Bar Styles
+   ============================================================================ */
+.progress-gradient {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.progress-gradient-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient-primary);
+  transition: width 0.5s ease;
+}
+
+.progress-gradient-success .progress-gradient-bar {
+  background: var(--gradient-success);
+}
+
+.progress-gradient-warning .progress-gradient-bar {
+  background: var(--gradient-warning);
+}
+
+/* ============================================================================
+   Avatar Styles
+   ============================================================================ */
+.avatar-gradient {
+  padding: 2px;
+  background: var(--gradient-card-border);
+  border-radius: 9999px;
+}
+
+/* ============================================================================
+   Tab Styles
+   ============================================================================ */
+.tab-gradient {
+  position: relative;
+}
+
+.tab-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+  border-radius: 3px 3px 0 0;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tab-gradient.active::after {
+  width: 100%;
+}
+
+/* ============================================================================
+   Tooltip Styles
+   ============================================================================ */
+.tooltip-gradient {
+  background: var(--gradient-primary);
+  color: var(--primary-foreground);
+}
+
+/* ============================================================================
+   Background Decorative Elements
+   ============================================================================ */
+.bg-decoration-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.bg-decoration-blob-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.3) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+}
+
+.bg-decoration-blob-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(74, 144, 217, 0.3) 0%, transparent 70%);
+  bottom: 100px;
+  left: -50px;
+}
+
+.bg-decoration-blob-3 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  top: 50%;
+  right: 20%;
+}
+
+/* Gradient Orbs */
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+  animation: orb-float 8s ease-in-out infinite;
+}
+
+.gradient-orb-primary {
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+  box-shadow: var(--glow-primary);
+}
+
+.gradient-orb-accent {
+  background: radial-gradient(circle, #8B5CF6 0%, transparent 70%);
+  box-shadow: var(--glow-accent);
+}
+
+@keyframes orb-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+/* Glassmorphism Effect */
+.glass-easyrouter {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-card);
+}
+
+.dark .glass-easyrouter {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Noise Texture Overlay */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================================
+   Responsive Utilities
+   ============================================================================ */
+@media (max-width: 768px) {
+  .stat-card-value {
+    font-size: 1.5rem;
+  }
+
+  .stat-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+}

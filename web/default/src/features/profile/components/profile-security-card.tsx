@@ -82,24 +82,24 @@ export function ProfileSecurityCard({
               key={item.title}
               type='button'
               onClick={item.action}
-              className={`hover:bg-muted/50 flex items-center gap-3 rounded-lg border p-3 text-left transition-colors md:flex-col md:gap-2 md:p-4 md:text-center ${
+              className={`flex items-center gap-3 rounded-xl border border-border/50 p-3 text-left shadow-sm transition-all duration-200 hover:shadow-md md:flex-col md:gap-2 md:p-4 md:text-center ${
                 item.variant === 'destructive'
-                  ? 'border-destructive/30 hover:border-destructive/50 hover:bg-destructive/5'
-                  : ''
+                  ? 'hover:border-destructive/50 hover:bg-destructive/5'
+                  : 'hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10'
               }`}
             >
               <div
-                className={`rounded-md p-2 ${
+                className={`flex size-10 items-center justify-center rounded-lg ${
                   item.variant === 'destructive'
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-muted'
+                    ? 'bg-gradient-destructive text-white'
+                    : 'bg-gradient-primary text-white'
                 }`}
               >
                 <item.icon className='h-5 w-5' />
               </div>
               <div className='min-w-0 md:contents'>
-                <p className='text-sm font-medium'>{item.title}</p>
-                <p className='text-muted-foreground line-clamp-1 text-xs md:line-clamp-none'>
+                <p className='text-sm font-semibold'>{item.title}</p>
+                <p className='text-muted-foreground/70 line-clamp-1 text-xs md:line-clamp-none'>
                   {item.description}
                 </p>
               </div>

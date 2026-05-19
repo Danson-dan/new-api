@@ -13,14 +13,14 @@ export function SettingsSection({
   children,
   className,
 }: SettingsSectionProps) {
-  const baseClassName = 'space-y-4'
+  const baseClassName = 'space-y-5'
   const sectionClassName = className
     ? `${baseClassName} ${className}`
     : baseClassName
 
   return (
     <section className={sectionClassName}>
-      <div className='space-y-1'>
+      <div className='space-y-1.5'>
         <h3
           {...titleProps}
           className={
@@ -32,10 +32,12 @@ export function SettingsSection({
           {title}
         </h3>
         {description && (
-          <p className='text-muted-foreground text-sm'>{description}</p>
+          <p className='text-muted-foreground/70 text-sm'>{description}</p>
         )}
       </div>
-      {children}
+      <div className='rounded-xl border border-border/50 bg-card/80 p-5 shadow-sm'>
+        {children}
+      </div>
     </section>
   )
 }

@@ -1,9 +1,14 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格的统计卡片组件
+ */
 import type { ReactNode } from 'react'
 import { type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 
-type StatCardTone = 'rose' | 'teal' | 'gray'
+type StatCardTone = 'primary' | 'success' | 'info' | 'warning'
 
 interface StatCardProps {
   title: string
@@ -17,10 +22,18 @@ interface StatCardProps {
   action?: ReactNode
 }
 
-const TONE_CLASSES: Record<StatCardTone, string> = {
-  rose: 'from-rose-500/80 via-rose-300/70 to-rose-200/20 dark:from-rose-400/70 dark:via-rose-500/30 dark:to-rose-500/5',
-  teal: 'from-teal-500/80 via-teal-300/70 to-teal-200/20 dark:from-teal-400/70 dark:via-teal-500/30 dark:to-teal-500/5',
-  gray: 'from-muted-foreground/50 via-muted-foreground/20 to-transparent dark:from-muted-foreground/40 dark:via-muted-foreground/20',
+const TONE_GRADIENTS: Record<StatCardTone, string> = {
+  primary: 'from-primary/80 via-primary/40 to-primary/10 dark:from-primary/70 dark:via-primary/30 dark:to-primary/5',
+  success: 'from-success/80 via-success/40 to-success/10 dark:from-success/70 dark:via-success/30 dark:to-success/5',
+  info: 'from-info/80 via-info/40 to-info/10 dark:from-info/70 dark:via-info/30 dark:to-info/5',
+  warning: 'from-warning/80 via-warning/40 to-warning/10 dark:from-warning/70 dark:via-warning/30 dark:to-warning/5',
+}
+
+const TONE_ICONS: Record<StatCardTone, string> = {
+  primary: 'bg-gradient-primary text-primary-foreground',
+  success: 'bg-gradient-success text-success-foreground',
+  info: 'bg-gradient-info text-info-foreground',
+  warning: 'bg-gradient-warning text-warning-foreground',
 }
 
 function normalizeSparkline(values?: number[]): number[] {
@@ -35,17 +48,16 @@ function normalizeSparkline(values?: number[]): number[] {
 
 export function StatCard(props: StatCardProps) {
   const Icon = props.icon
-  const tone = props.tone ?? 'gray'
+  const tone = props.tone ?? 'primary'
   const sparkline = normalizeSparkline(props.sparkline)
 
   return (
-    <div className='group flex min-h-32 flex-col justify-between gap-3'>
+    <div className='group flex min-h-32 flex-col justify-between gap-3 rounded-xl border border-border/50 bg-card p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:shadow-primary/5'>
       <div className='flex items-start justify-between gap-1'>
-        <div className='text-muted-foreground flex items-center gap-1.5 text-xs font-medium sm:gap-2'>
-          <Icon
-            className='text-muted-foreground/60 size-3.5 shrink-0'
-            aria-hidden='true'
-          />
+        <div className='flex items-center gap-2 text-xs font-medium text-muted-foreground'>
+          <div className={cn('rounded-lg p-1.5', TONE_ICONS[tone])}>
+            <Icon className='size-3.5' aria-hidden='true' />
+          </div>
           <span className='line-clamp-2 leading-snug'>{props.title}</span>
         </div>
         {props.action && <div className='shrink-0'>{props.action}</div>}
@@ -53,12 +65,12 @@ export function StatCard(props: StatCardProps) {
 
       {props.loading ? (
         <div className='flex flex-col gap-1.5'>
-          <Skeleton className='h-7 w-24' />
-          <Skeleton className='h-3.5 w-32' />
+          <Skeleton className='h-8 w-28' />
+          <Skeleton className='h-3.5 w-36' />
         </div>
       ) : props.error ? (
         <div className='flex flex-col gap-1'>
-          <div className='text-muted-foreground mt-0.5 font-mono text-base font-bold tracking-tight break-all tabular-nums sm:text-2xl'>
+          <div className='mt-0.5 bg-gradient-to-r from-primary to-primary/70 bg-clip-text font-mono text-2xl font-bold tracking-tight text-transparent'>
             --
           </div>
           <p className='text-muted-foreground/60 text-xs'>
@@ -67,7 +79,7 @@ export function StatCard(props: StatCardProps) {
         </div>
       ) : (
         <div className='flex flex-col gap-1'>
-          <div className='text-foreground font-mono text-2xl font-semibold tracking-tight break-all tabular-nums'>
+          <div className='bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text font-mono text-2xl font-bold tracking-tight text-transparent'>
             {props.value}
           </div>
           <p className='text-muted-foreground/60 text-xs leading-relaxed'>
@@ -76,14 +88,15 @@ export function StatCard(props: StatCardProps) {
         </div>
       )}
 
-      <div className='flex h-8 items-end gap-1' aria-hidden='true'>
+      <div className='flex h-10 items-end gap-1' aria-hidden='true'>
         {sparkline.map((height, index) => (
           <span
             key={`${props.title}-spark-${index}`}
             className={cn(
-              'flex-1 rounded-t-sm bg-linear-to-t',
+              'flex-1 rounded-t-sm transition-all duration-300',
               height <= 0 && 'opacity-20',
-              TONE_CLASSES[tone]
+              'bg-linear-to-t',
+              TONE_GRADIENTS[tone]
             )}
             style={{ height: `${height}%` }}
           />

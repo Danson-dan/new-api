@@ -1,3 +1,8 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格的表格组件
+ */
 'use client'
 
 import * as React from 'react'
@@ -22,7 +27,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
     <thead
       data-slot='table-header'
-      className={cn('[&_tr]:border-b', className)}
+      className={cn('bg-muted/30 border-b border-border/50', className)}
       {...props}
     />
   )
@@ -43,7 +48,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
     <tfoot
       data-slot='table-footer'
       className={cn(
-        'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0',
+        'bg-muted/50 border-t border-border/50 font-medium [&>tr]:last:border-b-0',
         className
       )}
       {...props}
@@ -56,7 +61,8 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot='table-row'
       className={cn(
-        'hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors',
+        'hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent border-b border-border/30 transition-all duration-200',
+        'has-aria-expanded:bg-muted/50 data-[state=selected]:bg-gradient-to-r data-[state=selected]:from-primary/10 data-[state=selected]:to-transparent',
         className
       )}
       {...props}
@@ -69,7 +75,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot='table-head'
       className={cn(
-        'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+        'text-foreground h-11 px-4 text-left align-middle font-semibold whitespace-nowrap [&:has([role=checkbox])]:pr-0',
         className
       )}
       {...props}
@@ -82,7 +88,7 @@ function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
     <td
       data-slot='table-cell'
       className={cn(
-        'p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0',
+        'p-4 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0',
         className
       )}
       {...props}
@@ -97,7 +103,7 @@ function TableCaption({
   return (
     <caption
       data-slot='table-caption'
-      className={cn('text-muted-foreground mt-4 text-sm', className)}
+      className={cn('text-muted-foreground/70 mt-4 text-sm', className)}
       {...props}
     />
   )

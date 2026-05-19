@@ -64,6 +64,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     Math.max(endpoints.length - 2, 0) +
     Math.max(tags.length - 2, 0)
 
+  const hasDiscount = props.model.display_discount != null
+
+  const formatDiscount = (discount: number) => {
+    const zhe = discount / 10
+    return zhe === Math.floor(zhe) ? `${zhe}折` : `${zhe.toFixed(1)}折`
+  }
+
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
     copyToClipboard(props.model.model_name || '')
@@ -115,10 +122,20 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                         /{tokenUnitLabel}
                       </span>
                     ))}
+                    {hasDiscount && (
+                      <span className='text-red-600 dark:text-red-400 whitespace-nowrap text-xs font-semibold'>
+                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span className='text-muted-foreground text-xs'>
                     {t('Dynamic Pricing')}
+                    {hasDiscount && (
+                      <span className='text-red-600 dark:text-red-400 ml-1.5 whitespace-nowrap text-xs font-semibold'>
+                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                      </span>
+                    )}
                   </span>
                 )
               ) : isTokenBased ? (
@@ -166,6 +183,11 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                       </span>
                     </span>
                   )}
+                  {hasDiscount && (
+                    <span className='text-red-600 dark:text-red-400 whitespace-nowrap text-xs font-semibold'>
+                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className='text-muted-foreground whitespace-nowrap'>
@@ -178,6 +200,11 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                     )}
                   </span>{' '}
                   / {t('request')}
+                  {hasDiscount && (
+                    <span className='text-red-600 dark:text-red-400 ml-1.5 whitespace-nowrap text-xs font-semibold'>
+                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                    </span>
+                  )}
                 </span>
               )}
             </div>

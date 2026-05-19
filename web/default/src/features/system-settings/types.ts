@@ -134,6 +134,12 @@ export type ModelSettings = {
   ImageRatio: string
   AudioRatio: string
   AudioCompletionRatio: string
+  DisplayPrice: string
+  UpstreamPrice: string
+  DisplayDiscount: string
+  ActualMarkup: string
+  DefaultDisplayDiscount: number
+  DefaultActualMarkup: number
   ExposeRatioEnabled: boolean
   'billing_setting.billing_mode': string
   'billing_setting.billing_expr': string
@@ -177,6 +183,12 @@ export type BillingSettings = {
   ImageRatio: string
   AudioRatio: string
   AudioCompletionRatio: string
+  DisplayPrice: string
+  UpstreamPrice: string
+  DisplayDiscount: string
+  ActualMarkup: string
+  DefaultDisplayDiscount: number
+  DefaultActualMarkup: number
   ExposeRatioEnabled: boolean
   'billing_setting.billing_mode': string
   'billing_setting.billing_expr': string

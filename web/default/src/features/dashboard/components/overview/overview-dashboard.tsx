@@ -203,14 +203,19 @@ function StartStepItem(props: {
     <li className='relative flex gap-3 pb-2.5 last:pb-0'>
       {!props.isLast && (
         <span
-          className='bg-border absolute top-9 bottom-0 left-4 w-px'
+          className={cn(
+            'absolute top-9 bottom-0 left-4 w-px',
+            props.step.completed ? 'bg-gradient-to-b from-success/50 to-success/20' : 'bg-border'
+          )}
           aria-hidden='true'
         />
       )}
       <span
         className={cn(
-          'bg-background relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border shadow-xs',
-          props.step.completed && 'border-success/30 bg-success/10'
+          'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border shadow-md',
+          props.step.completed 
+            ? 'border-success/30 bg-gradient-to-br from-success/20 to-success/10 shadow-success/20' 
+            : 'border-border/50 bg-card'
         )}
       >
         <StatusIcon
@@ -221,11 +226,21 @@ function StartStepItem(props: {
 
       <Link
         to={props.step.to}
-        className='bg-background/70 hover:bg-muted/50 focus-visible:ring-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left shadow-xs transition-colors outline-none focus-visible:ring-2'
+        className={cn(
+          'flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left shadow-sm transition-all duration-200 outline-none focus-visible:ring-2',
+          props.step.completed 
+            ? 'bg-success/5 border-success/20 hover:bg-success/10 hover:border-success/30' 
+            : 'bg-card/80 border-border/50 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10 hover:border-primary/20'
+        )}
       >
         <span className='flex min-w-0 items-start gap-2.5'>
-          <span className='bg-muted mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg'>
-            <Icon className='size-3.5' aria-hidden='true' />
+          <span className={cn(
+            'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg',
+            props.step.completed 
+              ? 'bg-gradient-success' 
+              : 'bg-gradient-primary'
+          )}>
+            <Icon className='size-3.5 text-white' aria-hidden='true' />
           </span>
           <span className='flex min-w-0 flex-col gap-0.5'>
             <span className='flex items-center gap-2 text-sm font-medium'>
@@ -366,14 +381,14 @@ function QuickActionItem(props: { action: QuickAction }) {
   return (
     <Button
       variant='outline'
-      className='h-auto justify-start rounded-xl px-3 py-3 text-left'
+      className='h-auto justify-start rounded-xl border-border/50 px-3 py-3 text-left shadow-sm transition-all duration-200 hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10'
       render={<Link to={props.action.to} />}
     >
-      <span className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
-        <Icon className='size-4' aria-hidden='true' />
+      <span className='bg-gradient-primary flex size-9 shrink-0 items-center justify-center rounded-lg shadow-md shadow-primary/20'>
+        <Icon className='size-4 text-white' aria-hidden='true' />
       </span>
       <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-        <span className='truncate text-sm font-medium'>
+        <span className='truncate text-sm font-semibold'>
           {props.action.title}
         </span>
         <span className='text-muted-foreground line-clamp-2 text-xs leading-relaxed'>
@@ -391,10 +406,10 @@ function CompactQuickAction(props: { action: QuickAction }) {
     <Button
       variant='outline'
       size='sm'
-      className='bg-background/70 h-8 min-w-24 gap-1.5 px-2.5'
+      className='bg-card/70 h-8 min-w-24 gap-1.5 rounded-xl border-border/50 px-2.5 transition-all duration-200 hover:border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10'
       render={<Link to={props.action.to} />}
     >
-      <Icon data-icon='inline-start' />
+      <Icon data-icon='inline-start' className='text-primary' />
       <span>{props.action.title}</span>
     </Button>
   )

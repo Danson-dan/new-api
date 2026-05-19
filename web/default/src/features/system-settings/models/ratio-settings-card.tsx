@@ -93,6 +93,42 @@ const modelSchema = z.object({
       })
     }
   }),
+  DisplayPrice: z.string().superRefine((value, ctx) => {
+    const result = validateJsonString(value)
+    if (!result.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.message || 'Invalid JSON',
+      })
+    }
+  }),
+  UpstreamPrice: z.string().superRefine((value, ctx) => {
+    const result = validateJsonString(value)
+    if (!result.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.message || 'Invalid JSON',
+      })
+    }
+  }),
+  DisplayDiscount: z.string().superRefine((value, ctx) => {
+    const result = validateJsonString(value)
+    if (!result.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.message || 'Invalid JSON',
+      })
+    }
+  }),
+  ActualMarkup: z.string().superRefine((value, ctx) => {
+    const result = validateJsonString(value)
+    if (!result.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.message || 'Invalid JSON',
+      })
+    }
+  }),
   ExposeRatioEnabled: z.boolean(),
   BillingMode: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
@@ -181,6 +217,15 @@ type ModelFormValues = z.infer<typeof modelSchema>
 type GroupFormValues = z.infer<typeof groupSchema>
 type RatioTabId = 'models' | 'groups' | 'tool-prices' | 'upstream-sync'
 
+const apiKeyMap: Record<string, string> = {
+  BillingMode: 'billing_setting.billing_mode',
+  BillingExpr: 'billing_setting.billing_expr',
+  DisplayPrice: 'DisplayPrice',
+  UpstreamPrice: 'UpstreamPrice',
+  DisplayDiscount: 'DisplayDiscount',
+  ActualMarkup: 'ActualMarkup',
+}
+
 type RatioSettingsCardProps = {
   modelDefaults: ModelFormValues
   groupDefaults: GroupFormValues
@@ -230,6 +275,10 @@ export function RatioSettingsCard({
     AudioCompletionRatio: normalizeJsonString(
       modelDefaults.AudioCompletionRatio
     ),
+    DisplayPrice: normalizeJsonString(modelDefaults.DisplayPrice),
+    UpstreamPrice: normalizeJsonString(modelDefaults.UpstreamPrice),
+    DisplayDiscount: normalizeJsonString(modelDefaults.DisplayDiscount),
+    ActualMarkup: normalizeJsonString(modelDefaults.ActualMarkup),
     ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
     BillingMode: normalizeJsonString(modelDefaults.BillingMode),
     BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
@@ -262,6 +311,7 @@ export function RatioSettingsCard({
       AudioCompletionRatio: formatJsonForTextarea(
         modelDefaults.AudioCompletionRatio
       ),
+      DisplayPrice: formatJsonForTextarea(modelDefaults.DisplayPrice),
       BillingMode: formatJsonForTextarea(modelDefaults.BillingMode),
       BillingExpr: formatJsonForTextarea(modelDefaults.BillingExpr),
     },
@@ -295,11 +345,14 @@ export function RatioSettingsCard({
       AudioCompletionRatio: normalizeJsonString(
         modelDefaults.AudioCompletionRatio
       ),
+      DisplayPrice: normalizeJsonString(modelDefaults.DisplayPrice),
+      UpstreamPrice: normalizeJsonString(modelDefaults.UpstreamPrice),
+      DisplayDiscount: normalizeJsonString(modelDefaults.DisplayDiscount),
+      ActualMarkup: normalizeJsonString(modelDefaults.ActualMarkup),
       ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
       BillingMode: normalizeJsonString(modelDefaults.BillingMode),
       BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
     }
-
     modelForm.reset({
       ...modelDefaults,
       ModelPrice: formatJsonForTextarea(modelDefaults.ModelPrice),
@@ -312,6 +365,10 @@ export function RatioSettingsCard({
       AudioCompletionRatio: formatJsonForTextarea(
         modelDefaults.AudioCompletionRatio
       ),
+      DisplayPrice: formatJsonForTextarea(modelDefaults.DisplayPrice),
+      UpstreamPrice: formatJsonForTextarea(modelDefaults.UpstreamPrice),
+      DisplayDiscount: formatJsonForTextarea(modelDefaults.DisplayDiscount),
+      ActualMarkup: formatJsonForTextarea(modelDefaults.ActualMarkup),
       BillingMode: formatJsonForTextarea(modelDefaults.BillingMode),
       BillingExpr: formatJsonForTextarea(modelDefaults.BillingExpr),
     })
@@ -354,25 +411,25 @@ export function RatioSettingsCard({
         ImageRatio: normalizeJsonString(values.ImageRatio),
         AudioRatio: normalizeJsonString(values.AudioRatio),
         AudioCompletionRatio: normalizeJsonString(values.AudioCompletionRatio),
+        DisplayPrice: normalizeJsonString(values.DisplayPrice),
+        UpstreamPrice: normalizeJsonString(values.UpstreamPrice),
+        DisplayDiscount: normalizeJsonString(values.DisplayDiscount),
+        ActualMarkup: normalizeJsonString(values.ActualMarkup),
         ExposeRatioEnabled: values.ExposeRatioEnabled,
         BillingMode: normalizeJsonString(values.BillingMode),
         BillingExpr: normalizeJsonString(values.BillingExpr),
       }
 
-      const apiKeyMap: Record<string, string> = {
-        BillingMode: 'billing_setting.billing_mode',
-        BillingExpr: 'billing_setting.billing_expr',
-      }
+      const fieldEntries = Object.entries(normalized) as Array<
+        [keyof typeof normalized, string | boolean]
+      >
 
-      const updates = (
-        Object.keys(normalized) as Array<keyof ModelFormValues>
-      ).filter(
-        (key) => normalized[key] !== modelNormalizedDefaults.current[key]
-      )
-
-      for (const key of updates) {
-        const apiKey = apiKeyMap[key as string] || (key as string)
-        await updateOption.mutateAsync({ key: apiKey, value: normalized[key] })
+      for (const [key, value] of fieldEntries) {
+        const apiKey = apiKeyMap[key] || key
+        await updateOption.mutateAsync({
+          key: apiKey,
+          value: value,
+        })
       }
     },
     [updateOption]

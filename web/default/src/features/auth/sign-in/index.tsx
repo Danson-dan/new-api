@@ -1,3 +1,8 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格的登录页面组件
+ */
 import { Link, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useStatus } from '@/hooks/use-status'
@@ -12,26 +17,36 @@ export function SignIn() {
 
   return (
     <AuthLayout>
-      <div className='w-full space-y-8'>
-        <div className='space-y-2'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Sign in')}
+      <div className='w-full space-y-6'>
+        <div className='space-y-2 text-center sm:text-left'>
+          <h2 className='bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-3xl font-bold text-transparent tracking-tight sm:text-4xl'>
+            {t('Welcome back')}
           </h2>
-          {!status?.self_use_mode_enabled && (
-            <p className='text-muted-foreground text-left text-sm sm:text-base'>
-              {t("Don't have an account?")}{' '}
-              <Link
-                to='/sign-up'
-                className='hover:text-primary font-medium underline underline-offset-4'
-              >
-                {t('Sign up')}
-              </Link>
-              .
-            </p>
-          )}
+          <p className='text-muted-foreground text-base sm:text-lg'>
+            {t('Sign in to your account')}
+          </p>
         </div>
 
-        <UserAuthForm redirectTo={redirect} />
+        {/* Login Card */}
+        <div className='glass-easyrouter overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-xl'>
+          <div className='p-6 sm:p-8'>
+            <UserAuthForm redirectTo={redirect} />
+          </div>
+        </div>
+
+        {/* Sign up link */}
+        {!status?.self_use_mode_enabled && (
+          <p className='text-center text-muted-foreground text-sm'>
+            {t("Don't have an account?")}{' '}
+            <Link
+              to='/sign-up'
+              className='bg-gradient-to-r from-primary to-primary/70 bg-clip-text font-semibold text-transparent underline underline-offset-4 transition-opacity hover:opacity-80'
+            >
+              {t('Sign up')}
+            </Link>
+            .
+          </p>
+        )}
 
         <TermsFooter
           variant='sign-in'

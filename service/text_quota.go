@@ -374,6 +374,9 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		logger.LogError(ctx, "error settling billing: "+err.Error())
 	}
 
+	logger.LogInfo(ctx, fmt.Sprintf("请求完成: model=%s tokens(prompt=%d completion=%d total=%d) quota=%d channel=%d userId=%d",
+		summary.ModelName, summary.PromptTokens, summary.CompletionTokens, summary.TotalTokens, summary.Quota, relayInfo.ChannelId, relayInfo.UserId))
+
 	logModel := summary.ModelName
 	if strings.HasPrefix(logModel, "gpt-4-gizmo") {
 		logModel = "gpt-4-gizmo-*"

@@ -12,6 +12,7 @@ export function formatJsonForTextarea(value: string) {
 }
 
 export function normalizeJsonString(value: string) {
+  if (!value || typeof value !== 'string') return ''
   const trimmed = value.trim()
   if (!trimmed) {
     return ''

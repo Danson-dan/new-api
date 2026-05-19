@@ -1,3 +1,8 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格的标题卡片组件
+ */
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import {
@@ -20,6 +25,7 @@ type TitledCardProps = {
   iconClassName?: string
   titleClassName?: string
   descriptionClassName?: string
+  variant?: 'default' | 'gradient'
 }
 
 export function TitledCard({
@@ -34,18 +40,19 @@ export function TitledCard({
   iconClassName,
   titleClassName,
   descriptionClassName,
+  variant = 'default',
 }: TitledCardProps) {
   return (
-    <Card className={cn('gap-0 overflow-hidden py-0', className)}>
+    <Card className={cn('gap-0 overflow-hidden rounded-xl border-border/50 bg-card shadow-sm transition-shadow hover:shadow-md', className)}>
       <CardHeader
-        className={cn('border-b p-3 !pb-3 sm:p-5 sm:!pb-5', headerClassName)}
+        className={cn('border-border/50 bg-gradient-to-r from-card to-card/50 p-4 !pb-4 sm:p-5 sm:!pb-5', headerClassName)}
       >
         <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
           <div className='flex min-w-0 items-center gap-3'>
             {icon != null && (
               <div
                 className={cn(
-                  'bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9',
+                  'bg-gradient-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md shadow-primary/20',
                   iconClassName
                 )}
               >
@@ -55,7 +62,7 @@ export function TitledCard({
             <div className='min-w-0'>
               <CardTitle
                 className={cn(
-                  'text-lg tracking-tight sm:text-xl',
+                  'text-lg font-bold tracking-tight sm:text-xl',
                   titleClassName
                 )}
               >
@@ -63,7 +70,7 @@ export function TitledCard({
               </CardTitle>
               {description != null && (
                 <CardDescription
-                  className={cn('text-xs sm:text-sm', descriptionClassName)}
+                  className={cn('text-xs text-muted-foreground/70 sm:text-sm', descriptionClassName)}
                 >
                   {description}
                 </CardDescription>
@@ -75,7 +82,7 @@ export function TitledCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className={cn('p-3 sm:p-5', contentClassName)}>
+      <CardContent className={cn('p-4 sm:p-5', contentClassName)}>
         {children}
       </CardContent>
     </Card>

@@ -310,6 +310,27 @@ var defaultModelPrice = map[string]float64{
 	"veo-3.1-fast-generate-preview":  0.15,
 }
 
+// defaultDisplayPrice 用于显示给用户的价格，与实际扣减分离
+// 如果未配置，则使用模型倍率计算的价格作为显示价格
+var defaultDisplayPrice = map[string]float64{}
+
+// defaultUpstreamPrice 上游正价，从上游同步时自动填充
+var defaultUpstreamPrice = map[string]float64{}
+
+// defaultDisplayDiscount 全局默认显示折扣 (模型级覆盖优先级更高)
+// 85 = 8.5折，用户看到现价 = 正价 × 显示折扣 / 100
+var DefaultDisplayDiscount = 85.0
+
+// defaultActualMarkup 全局默认实际加价倍率 (模型级覆盖优先级更高)
+// 1.3 = 实际扣费 = 正价 × 1.3
+var DefaultActualMarkup = 1.3
+
+// defaultActualMarkupMap 模型级实际加价倍率覆盖
+var defaultActualMarkup = map[string]float64{}
+
+// defaultDisplayDiscountMap 模型级显示折扣覆盖
+var defaultDisplayDiscount = map[string]float64{}
+
 var defaultAudioRatio = map[string]float64{
 	"gpt-4o-audio-preview":         16,
 	"gpt-4o-mini-audio-preview":    66.67,
@@ -331,6 +352,11 @@ var defaultAudioCompletionRatio = map[string]float64{
 var modelPriceMap = types.NewRWMap[string, float64]()
 var modelRatioMap = types.NewRWMap[string, float64]()
 var completionRatioMap = types.NewRWMap[string, float64]()
+var displayPriceMap = types.NewRWMap[string, float64]() // 显示价格，与实际扣减分离
+
+var upstreamPriceMap = types.NewRWMap[string, float64]()    // 正价：上游原始价格 ($/1M tokens)
+var displayDiscountMap = types.NewRWMap[string, float64]()  // 显示折扣：模型级显示折扣百分比 (85 = 8.5折)
+var actualMarkupMap = types.NewRWMap[string, float64]()     // 实际加价：模型级实际扣费倍率 (1.3 = 多扣30%)
 
 var defaultCompletionRatio = map[string]float64{
 	"gpt-4-gizmo-*":  2,
@@ -344,6 +370,10 @@ func InitRatioSettings() {
 	modelPriceMap.AddAll(defaultModelPrice)
 	modelRatioMap.AddAll(defaultModelRatio)
 	completionRatioMap.AddAll(defaultCompletionRatio)
+	displayPriceMap.AddAll(defaultDisplayPrice)
+	upstreamPriceMap.AddAll(defaultUpstreamPrice)
+	displayDiscountMap.AddAll(defaultDisplayDiscount)
+	actualMarkupMap.AddAll(defaultActualMarkup)
 	cacheRatioMap.AddAll(defaultCacheRatio)
 	createCacheRatioMap.AddAll(defaultCreateCacheRatio)
 	imageRatioMap.AddAll(defaultImageRatio)
@@ -752,4 +782,176 @@ func GetModelRatioOrPrice(model string) (float64, bool, bool) { // price or rati
 		return modelRatio, false, true
 	}
 	return 37.5, false, false
+}
+
+// DisplayPrice 相关方法
+
+func DisplayPrice2JSONString() string {
+	return displayPriceMap.MarshalJSONString()
+}
+
+func UpdateDisplayPriceByJSONString(jsonStr string) error {
+	return types.LoadFromJsonStringWithCallback(displayPriceMap, jsonStr, InvalidateExposedDataCache)
+}
+
+func GetDisplayPriceMap() map[string]float64 {
+	return displayPriceMap.ReadAll()
+}
+
+func GetDisplayPriceCopy() map[string]float64 {
+	return displayPriceMap.ReadAll()
+}
+
+// GetDisplayPrice 返回模型的显示价格
+// 如果未配置显示价格，则根据模型倍率计算价格（modelRatio * 2 = $/1M tokens）
+func GetDisplayPrice(modelName string, printErr bool) (float64, bool) {
+	name := FormatMatchingModelName(modelName)
+
+	if price, ok := displayPriceMap.Get(name); ok {
+		return price, true
+	}
+
+	// 如果未配置显示价格，根据模型倍率计算显示价格
+	modelRatio, success, _ := GetModelRatio(modelName)
+	if success {
+		return modelRatio * 2, true // 转换为 $/1M tokens
+	}
+
+	if printErr {
+		common.SysError("display price not found for model: " + modelName)
+	}
+	return -1, false
+}
+
+// ============================================================
+// UpstreamPrice 正价相关方法
+// ============================================================
+
+func UpstreamPrice2JSONString() string {
+	return upstreamPriceMap.MarshalJSONString()
+}
+
+func UpdateUpstreamPriceByJSONString(jsonStr string) error {
+	return types.LoadFromJsonStringWithCallback(upstreamPriceMap, jsonStr, InvalidateExposedDataCache)
+}
+
+func GetUpstreamPriceMap() map[string]float64 {
+	return upstreamPriceMap.ReadAll()
+}
+
+// GetUpstreamPrice 返回上游正价 ($/1M tokens)
+func GetUpstreamPrice(modelName string) (float64, bool) {
+	name := FormatMatchingModelName(modelName)
+	return upstreamPriceMap.Get(name)
+}
+
+// ============================================================
+// DisplayDiscount 显示折扣相关方法
+// ============================================================
+
+func DisplayDiscount2JSONString() string {
+	return displayDiscountMap.MarshalJSONString()
+}
+
+func UpdateDisplayDiscountByJSONString(jsonStr string) error {
+	return types.LoadFromJsonStringWithCallback(displayDiscountMap, jsonStr, InvalidateExposedDataCache)
+}
+
+// GetDisplayDiscount 返回模型显示折扣率 (模型级 > 全局默认)
+// 返回值如 85 表示 8.5折
+func GetDisplayDiscount(modelName string) float64 {
+	name := FormatMatchingModelName(modelName)
+	if discount, ok := displayDiscountMap.Get(name); ok {
+		return discount
+	}
+	return DefaultDisplayDiscount
+}
+
+// HasDisplayDiscount 检查是否有模型级显示折扣覆盖（不含全局默认）
+func HasDisplayDiscount(modelName string) bool {
+	name := FormatMatchingModelName(modelName)
+	_, ok := displayDiscountMap.Get(name)
+	return ok
+}
+
+// GetDisplayDiscountMap 获取所有模型级显示折扣
+func GetDisplayDiscountMap() map[string]float64 {
+	return displayDiscountMap.ReadAll()
+}
+
+// GetCalculatedDisplayPrice 计算现价 = 正价 × 显示折扣 / 100
+// 如果正价未配置，则回退到旧的 DisplayPrice / modelRatio * 2
+func GetCalculatedDisplayPrice(modelName string) float64 {
+	upstreamPrice, hasUpstream := GetUpstreamPrice(modelName)
+	if hasUpstream {
+		discount := GetDisplayDiscount(modelName)
+		return upstreamPrice * discount / 100.0
+	}
+	// 回退：使用旧的显示价格机制
+	price, ok := GetDisplayPrice(modelName, false)
+	if ok {
+		return price
+	}
+	return 0
+}
+
+// ============================================================
+// ActualMarkup 实际加价相关方法
+// ============================================================
+
+func ActualMarkup2JSONString() string {
+	return actualMarkupMap.MarshalJSONString()
+}
+
+func UpdateActualMarkupByJSONString(jsonStr string) error {
+	return types.LoadFromJsonStringWithCallback(actualMarkupMap, jsonStr, InvalidateExposedDataCache)
+}
+
+// GetActualMarkup 返回模型实际加价倍率 (模型级 > 全局默认)
+// 返回值如 1.3 表示多扣 30%
+func GetActualMarkup(modelName string) float64 {
+	name := FormatMatchingModelName(modelName)
+	if markup, ok := actualMarkupMap.Get(name); ok {
+		return markup
+	}
+	return DefaultActualMarkup
+}
+
+// GetActualMarkupMap 获取所有模型级实际加价
+func GetActualMarkupMap() map[string]float64 {
+	return actualMarkupMap.ReadAll()
+}
+
+// GetCalculatedActualPrice 计算实际扣费价格 = 正价 × 实际加价倍率
+// 如果正价未配置，则回退到 modelRatio * 2
+func GetCalculatedActualPrice(modelName string) float64 {
+	upstreamPrice, hasUpstream := GetUpstreamPrice(modelName)
+	if hasUpstream {
+		markup := GetActualMarkup(modelName)
+		return upstreamPrice * markup
+	}
+	// 回退：使用旧的倍率机制
+	modelRatio, success, _ := GetModelRatio(modelName)
+	if success {
+		return modelRatio * 2
+	}
+	return 0
+}
+
+// GetModelRatioFromMarkup 从实际加价计算等效模型倍率，用于兼容旧的扣费系统
+// 旧系统 modelRatio * 2 = $/1M tokens
+// 新系统 upstreamPrice * actualMarkup = $/1M tokens
+// 所以 modelRatio = upstreamPrice * actualMarkup / 2
+func GetModelRatioFromMarkup(modelName string) float64 {
+	upstreamPrice, hasUpstream := GetUpstreamPrice(modelName)
+	if hasUpstream {
+		markup := GetActualMarkup(modelName)
+		return upstreamPrice * markup / 2.0
+	}
+	// 回退到旧倍率
+	ratio, success, _ := GetModelRatio(modelName)
+	if success {
+		return ratio
+	}
+	return 0
 }

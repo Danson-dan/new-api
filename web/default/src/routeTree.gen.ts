@@ -18,6 +18,11 @@ import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsQuickStartRouteImport } from './routes/docs/quick-start'
+import { Route as DocsApiRouteImport } from './routes/docs/api'
+import { Route as DocsAppsRouteImport } from './routes/docs/apps'
+import { Route as DocsAppsSlugRouteImport } from './routes/docs/apps/$slug'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
 import { Route as AuthenticatedChat2linkRouteImport } from './routes/_authenticated/chat2link'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
@@ -107,6 +112,31 @@ const PricingIndexRoute = PricingIndexRouteImport.update({
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsQuickStartRoute = DocsQuickStartRouteImport.update({
+  id: '/docs/quick-start',
+  path: '/docs/quick-start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsApiRoute = DocsApiRouteImport.update({
+  id: '/docs/api',
+  path: '/docs/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsAppsRoute = DocsAppsRouteImport.update({
+  id: '/docs/apps',
+  path: '/docs/apps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsAppsSlugRoute = DocsAppsSlugRouteImport.update({
+  id: '/docs/apps/$slug',
+  path: '/docs/apps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthProviderRoute = OauthProviderRouteImport.update({
@@ -393,6 +423,11 @@ export interface FileRoutesByFullPath {
   '/chat2link': typeof AuthenticatedChat2linkRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/about/': typeof AboutIndexRoute
+  '/docs/': typeof DocsIndexRoute
+  '/docs/quick-start': typeof DocsQuickStartRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/apps': typeof DocsAppsRoute
+  '/docs/apps/$slug': typeof DocsAppsSlugRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
@@ -507,6 +542,11 @@ export interface FileRoutesById {
   '/_authenticated/chat2link': typeof AuthenticatedChat2linkRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/about/': typeof AboutIndexRoute
+  '/docs/': typeof DocsIndexRoute
+  '/docs/quick-start': typeof DocsQuickStartRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/apps': typeof DocsAppsRoute
+  '/docs/apps/$slug': typeof DocsAppsSlugRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
@@ -565,6 +605,11 @@ export interface FileRouteTypes {
     | '/chat2link'
     | '/oauth/$provider'
     | '/about/'
+    | '/docs/'
+    | '/docs/quick-start'
+    | '/docs/api'
+    | '/docs/apps'
+    | '/docs/apps/$slug'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
@@ -678,6 +723,11 @@ export interface FileRouteTypes {
     | '/_authenticated/chat2link'
     | '/oauth/$provider'
     | '/about/'
+    | '/docs/'
+    | '/docs/quick-start'
+    | '/docs/api'
+    | '/docs/apps'
+    | '/docs/apps/$slug'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
@@ -729,6 +779,11 @@ export interface RootRouteChildren {
   errors503Route: typeof errors503Route
   OauthProviderRoute: typeof OauthProviderRoute
   AboutIndexRoute: typeof AboutIndexRoute
+  DocsIndexRoute: typeof DocsIndexRoute
+  DocsQuickStartRoute: typeof DocsQuickStartRoute
+  DocsApiRoute: typeof DocsApiRoute
+  DocsAppsRoute: typeof DocsAppsRoute
+  DocsAppsSlugRoute: typeof DocsAppsSlugRoute
   PricingIndexRoute: typeof PricingIndexRoute
   RankingsIndexRoute: typeof RankingsIndexRoute
   SetupIndexRoute: typeof SetupIndexRoute
@@ -798,6 +853,41 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about/'
       preLoaderRoute: typeof AboutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/quick-start': {
+      id: '/docs/quick-start'
+      path: '/docs/quick-start'
+      fullPath: '/docs/quick-start'
+      preLoaderRoute: typeof DocsQuickStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/api': {
+      id: '/docs/api'
+      path: '/docs/api'
+      fullPath: '/docs/api'
+      preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/apps': {
+      id: '/docs/apps'
+      path: '/docs/apps'
+      fullPath: '/docs/apps'
+      preLoaderRoute: typeof DocsAppsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/apps/$slug': {
+      id: '/docs/apps/$slug'
+      path: '/docs/apps/$slug'
+      fullPath: '/docs/apps/$slug'
+      preLoaderRoute: typeof DocsAppsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/$provider': {
@@ -1273,6 +1363,11 @@ const rootRouteChildren: RootRouteChildren = {
   errors503Route: errors503Route,
   OauthProviderRoute: OauthProviderRoute,
   AboutIndexRoute: AboutIndexRoute,
+  DocsIndexRoute: DocsIndexRoute,
+  DocsQuickStartRoute: DocsQuickStartRoute,
+  DocsApiRoute: DocsApiRoute,
+  DocsAppsRoute: DocsAppsRoute,
+  DocsAppsSlugRoute: DocsAppsSlugRoute,
   PricingIndexRoute: PricingIndexRoute,
   RankingsIndexRoute: RankingsIndexRoute,
   SetupIndexRoute: SetupIndexRoute,

@@ -60,6 +60,10 @@ const createModelPricingSchema = (t: (key: string) => string) =>
     imageRatio: z.string().optional(),
     audioRatio: z.string().optional(),
     audioCompletionRatio: z.string().optional(),
+    displayPrice: z.string().optional(),
+    upstreamPrice: z.string().optional(),
+    displayDiscount: z.string().optional(),
+    actualMarkup: z.string().optional(),
   })
 
 type ModelPricingFormValues = z.infer<
@@ -85,6 +89,10 @@ export type ModelRatioData = {
   imageRatio?: string
   audioRatio?: string
   audioCompletionRatio?: string
+  displayPrice?: string
+  upstreamPrice?: string
+  displayDiscount?: string
+  actualMarkup?: string
   billingMode?: PricingMode
   billingExpr?: string
   requestRuleExpr?: string
@@ -426,6 +434,10 @@ export function ModelPricingEditorPanel({
       imageRatio: '',
       audioRatio: '',
       audioCompletionRatio: '',
+      displayPrice: '',
+      upstreamPrice: '',
+      displayDiscount: '',
+      actualMarkup: '',
     },
   })
 
@@ -443,6 +455,10 @@ export function ModelPricingEditorPanel({
         imageRatio: editData.imageRatio || '',
         audioRatio: editData.audioRatio || '',
         audioCompletionRatio: editData.audioCompletionRatio || '',
+        displayPrice: editData.displayPrice || '',
+        upstreamPrice: editData.upstreamPrice || '',
+        displayDiscount: editData.displayDiscount || '',
+        actualMarkup: editData.actualMarkup || '',
       })
       setPricingMode(
         editData.billingMode === 'tiered_expr'
@@ -464,6 +480,10 @@ export function ModelPricingEditorPanel({
         imageRatio: '',
         audioRatio: '',
         audioCompletionRatio: '',
+        displayPrice: '',
+        upstreamPrice: '',
+        displayDiscount: '',
+        actualMarkup: '',
       })
       setPricingMode('per-token')
       setBillingExpr('')
@@ -702,6 +722,10 @@ export function ModelPricingEditorPanel({
       imageRatio: values.imageRatio || '',
       audioRatio: values.audioRatio || '',
       audioCompletionRatio: values.audioCompletionRatio || '',
+      displayPrice: values.displayPrice || '',
+      upstreamPrice: values.upstreamPrice || '',
+      displayDiscount: values.displayDiscount || '',
+      actualMarkup: values.actualMarkup || '',
     }
 
     if (pricingMode === 'tiered_expr') {
@@ -806,6 +830,131 @@ export function ModelPricingEditorPanel({
                       </FieldDescription>
                     </Field>
 
+                    <FormField
+                      control={form.control}
+                      name='displayPrice'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Display price')}</FormLabel>
+                          <FormControl>
+                            <InputGroup>
+                              <InputGroupAddon>$</InputGroupAddon>
+                              <InputGroupInput
+                                inputMode='decimal'
+                                placeholder='2.5'
+                                {...field}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (numericDraftRegex.test(value)) {
+                                    field.onChange(value)
+                                  }
+                                }}
+                              />
+                              <InputGroupAddon align='inline-end'>$/1M</InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                          <FormDescription>
+                            {t(
+                              'Optional display price shown to users. If set, this overrides the calculated price from the input ratio. Allows showing a lower price while charging based on actual costs.'
+                            )}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name='upstreamPrice'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('正价')}</FormLabel>
+                          <FormControl>
+                            <InputGroup>
+                              <InputGroupAddon>$</InputGroupAddon>
+                              <InputGroupInput
+                                inputMode='decimal'
+                                placeholder='2.5'
+                                {...field}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (numericDraftRegex.test(value)) {
+                                    field.onChange(value)
+                                  }
+                                }}
+                              />
+                              <InputGroupAddon align='inline-end'>$/1M</InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                          <FormDescription>
+                            {t('上游正价，同步时自动填充')}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className='grid grid-cols-2 gap-3'>
+                      <FormField
+                        control={form.control}
+                        name='displayDiscount'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('显示折扣')}</FormLabel>
+                            <FormControl>
+                              <InputGroup>
+                                <InputGroupInput
+                                  inputMode='decimal'
+                                  placeholder='85'
+                                  {...field}
+                                  onChange={(event) => {
+                                    const value = event.target.value
+                                    if (numericDraftRegex.test(value)) {
+                                      field.onChange(value)
+                                    }
+                                  }}
+                                />
+                                <InputGroupAddon align='inline-end'>折</InputGroupAddon>
+                              </InputGroup>
+                            </FormControl>
+                            <FormDescription className='text-xs'>
+                              85 = 8.5折，现价 = 正价 × 折扣/100
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name='actualMarkup'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('实际加价')}</FormLabel>
+                            <FormControl>
+                              <InputGroup>
+                                <InputGroupInput
+                                  inputMode='decimal'
+                                  placeholder='1.3'
+                                  {...field}
+                                  onChange={(event) => {
+                                    const value = event.target.value
+                                    if (numericDraftRegex.test(value)) {
+                                      field.onChange(value)
+                                    }
+                                  }}
+                                />
+                                <InputGroupAddon align='inline-end'>x</InputGroupAddon>
+                              </InputGroup>
+                            </FormControl>
+                            <FormDescription className='text-xs'>
+                              1.3 = +30%，实际扣费 = 正价 × 加价
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     <div className='grid gap-3 sm:grid-cols-2'>
                       {laneConfigs.map((lane) => {
                         const disabled =
@@ -872,6 +1021,131 @@ export function ModelPricingEditorPanel({
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name='displayPrice'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Display price')}</FormLabel>
+                        <FormControl>
+                          <InputGroup>
+                            <InputGroupAddon>$</InputGroupAddon>
+                            <InputGroupInput
+                              inputMode='decimal'
+                              placeholder='0.008'
+                              {...field}
+                              onChange={(event) => {
+                                const value = event.target.value
+                                if (numericDraftRegex.test(value)) {
+                                  field.onChange(value)
+                                }
+                              }}
+                            />
+                            <InputGroupAddon align='inline-end'>{t('per request')}</InputGroupAddon>
+                          </InputGroup>
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            'Optional display price shown to users. If set, this overrides the actual price. Allows showing a lower price while charging based on actual costs.'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='upstreamPrice'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('正价')}</FormLabel>
+                        <FormControl>
+                          <InputGroup>
+                            <InputGroupAddon>$</InputGroupAddon>
+                            <InputGroupInput
+                              inputMode='decimal'
+                              placeholder='0.01'
+                              {...field}
+                              onChange={(event) => {
+                                const value = event.target.value
+                                if (numericDraftRegex.test(value)) {
+                                  field.onChange(value)
+                                }
+                              }}
+                            />
+                            <InputGroupAddon align='inline-end'>{t('per request')}</InputGroupAddon>
+                          </InputGroup>
+                        </FormControl>
+                        <FormDescription>
+                          {t('上游正价，同步时自动填充')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className='grid grid-cols-2 gap-3'>
+                    <FormField
+                      control={form.control}
+                      name='displayDiscount'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('显示折扣')}</FormLabel>
+                          <FormControl>
+                            <InputGroup>
+                              <InputGroupInput
+                                inputMode='decimal'
+                                placeholder='85'
+                                {...field}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (numericDraftRegex.test(value)) {
+                                    field.onChange(value)
+                                  }
+                                }}
+                              />
+                              <InputGroupAddon align='inline-end'>折</InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                          <FormDescription className='text-xs'>
+                            85 = 8.5折，现价 = 正价 × 折扣/100
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='actualMarkup'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('实际加价')}</FormLabel>
+                          <FormControl>
+                            <InputGroup>
+                              <InputGroupInput
+                                inputMode='decimal'
+                                placeholder='1.3'
+                                {...field}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (numericDraftRegex.test(value)) {
+                                    field.onChange(value)
+                                  }
+                                }}
+                              />
+                              <InputGroupAddon align='inline-end'>x</InputGroupAddon>
+                            </InputGroup>
+                          </FormControl>
+                          <FormDescription className='text-xs'>
+                            1.3 = +30%，实际扣费 = 正价 × 加价
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent

@@ -37,6 +37,8 @@ export type PricingModel = {
   billing_expr?: string
   /** Pricing version returned by backend, useful for cache busting */
   pricing_version?: string
+  /** Display discount percentage (e.g. 85 = 8.5折, 100 = no discount) */
+  display_discount?: number
   /**
    * Optional model metadata fields. These are not yet returned by the backend
    * and are populated client-side from {@link inferModelMetadata}.

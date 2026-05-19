@@ -137,14 +137,14 @@ export function SummaryCards() {
     currencyEnabled,
     currencyLabel,
   }).map((config, index) => {
-    const tones = ['rose', 'teal', 'gray'] as const
+    const tones = ['primary', 'info', 'success'] as const
 
     return {
       title: config.title,
       value: config.value,
       desc: config.description,
       icon: config.icon,
-      tone: tones[index] ?? 'gray',
+      tone: tones[index] ?? 'primary',
       sparkline:
         config.key === 'balance'
           ? sparklineData.balance
@@ -155,7 +155,7 @@ export function SummaryCards() {
   })
 
   return (
-    <div className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
+    <div className='card-gradient-bg overflow-hidden rounded-2xl border border-border/50 p-1'>
       <div className='grid xl:grid-cols-[minmax(0,1fr)_19rem]'>
         <div className='flex flex-col gap-3 p-4 sm:p-5'>
           <div className='flex flex-wrap items-start justify-between gap-3'>
@@ -172,7 +172,7 @@ export function SummaryCards() {
             {items.map((it) => (
               <StaggerItem
                 key={it.title}
-                className='bg-background/60 rounded-xl border p-3'
+                className='rounded-xl border border-border/50 bg-card/80 p-1'
               >
                 <StatCard
                   title={it.title}
@@ -188,17 +188,17 @@ export function SummaryCards() {
           </StaggerContainer>
         </div>
 
-        <div className='bg-warning/10 flex flex-col justify-between gap-5 border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
+        <div className='flex flex-col justify-between gap-5 rounded-xl border border-border/50 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent p-4 sm:p-5'>
           <div className='flex flex-col gap-2'>
             <div className='text-muted-foreground text-sm'>
               {t('Credit remaining')}
             </div>
             <div className='flex items-center gap-2'>
-              <span className='font-mono text-2xl font-semibold tracking-tight'>
+              <span className='bg-gradient-to-r from-primary to-primary/70 bg-clip-text font-mono text-3xl font-bold tracking-tight text-transparent'>
                 {summaryValues.remainDisplay}
               </span>
               <CreditCard
-                className='text-muted-foreground size-4'
+                className='text-primary size-5'
                 aria-hidden='true'
               />
             </div>
@@ -208,7 +208,7 @@ export function SummaryCards() {
                 : t('Balance is shown in quota units')}
             </p>
           </div>
-          <Button className='justify-between' render={<Link to='/wallet' />}>
+          <Button className='btn-gradient justify-between' render={<Link to='/wallet' />}>
             <span>{t('Recharge')}</span>
             <ArrowRight data-icon='inline-end' />
           </Button>

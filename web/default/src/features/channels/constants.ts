@@ -58,6 +58,7 @@ export const CHANNEL_TYPES = {
   55: 'Sora',
   56: 'Replicate',
   57: 'Codex',
+  58: 'EasyRouter',
 } as const
 
 const CHANNEL_TYPE_DISPLAY_ORDER: number[] = [
@@ -318,43 +319,52 @@ export const RESPONSE_TIME_CONFIG = {
 // ============================================================================
 
 export const FIELD_PLACEHOLDERS = {
-  NAME: 'e.g., OpenAI GPT-4 Production',
-  BASE_URL: 'Leave empty to use default',
-  KEY: 'API Key (one per line for batch mode)',
-  MODELS: 'Comma-separated model names, e.g., gpt-4,gpt-3.5-turbo',
-  GROUP: 'Please Select user groups that can access this channel.',
-  MODEL_MAPPING: '{"request_model": "actual_model"}',
-  TEST_MODEL: 'Model to use for testing',
-  TAG: 'Optional tag for grouping channels',
-  REMARK: 'Optional notes about this channel',
+  NAME: '例如：EasyRouter 生产环境',
+  BASE_URL: '留空则使用系统内置默认地址',
+  KEY: '上游 API Key，批量添加时一行一个',
+  MODELS: '模型名称用英文逗号分隔，例如：gpt-4o,gpt-4o-mini,claude-3-5-sonnet',
+  GROUP: '选择可以使用此渠道的用户分组',
+  MODEL_MAPPING: '{"客户端请求的模型名": "上游实际的模型名"}',
+  TEST_MODEL: '连通性测试时使用的模型',
+  TAG: '可选，给渠道打标签方便批量筛选',
+  REMARK: '管理员内部备注，用户不可见',
   PARAM_OVERRIDE: '{"temperature": 0.7}',
   HEADER_OVERRIDE: '{"X-Custom-Header": "value"}',
-  STATUS_CODE_MAPPING: '{"400": "500"}',
+  STATUS_CODE_MAPPING: '{"400": "500"} 表示上游返回400时改为返回500',
 } as const
 
 export const FIELD_DESCRIPTIONS = {
-  NAME: 'Friendly name to identify this channel',
-  TYPE: 'Provider type (OpenAI, Anthropic, etc.)',
-  BASE_URL: 'Custom API base URL. Leave empty to use provider default.',
-  KEY: 'API key from the provider',
+  NAME: '给渠道起一个好记的名字，方便在列表中辨识',
+  TYPE: '上游服务商的类型。EasyRouter 选"EasyRouter"，OpenAI 选"OpenAI"等',
+  BASE_URL:
+    '自定义 API 地址。EasyRouter 等官方渠道已内置默认地址，除非使用第三方代理或特殊端点，否则留空即可。注意：不要加 /v1 或尾部斜杠',
+  KEY: '上游服务商提供的 API Key。EasyRouter 填你在 easyrouter.io 后台获取的 sk- 开头的密钥。批量模式下一行填一个 Key',
   MODELS:
-    'List of models supported by this channel. Use comma to separate multiple models.',
-  GROUP: 'User groups that can access this channel. ',
+    '此渠道支持的模型列表，用英文逗号分隔。只有在此列表中的模型才会被路由到此渠道。EasyRouter 支持 gpt-4o, gpt-4o-mini, claude-3-5-sonnet, deepseek-chat 等',
+  GROUP:
+    '选择可以使用此渠道的用户分组。默认分组"default"表示所有用户可用。可根据需要创建多个分组，给不同用户分配不同分组',
   MODEL_MAPPING:
-    'Map request model names to actual provider model names (JSON format)',
-  PRIORITY: 'Higher priority channels are selected first',
-  WEIGHT: 'Used for load balancing. Higher weight = more requests',
-  TEST_MODEL: 'Model to use when testing channel connectivity',
-  AUTO_BAN: 'Automatically disable channel on repeated failures',
-  STATUS_CODE_MAPPING: 'Map response status codes (JSON format)',
-  TAG: 'Group channels by tag for batch operations',
-  REMARK: 'Internal notes (not shown to users)',
-  SETTING: 'Channel-specific settings (JSON format)',
-  PARAM_OVERRIDE: 'Override request parameters (JSON format)',
-  HEADER_OVERRIDE: 'Override request headers (JSON format)',
-  MULTI_KEY_MODE: 'How to select keys: random or sequential polling',
-  BATCH_ADD: 'Create multiple channels from multiple keys',
-  OPENAI_ORG: 'OpenAI Organization ID (optional)',
+    '模型名称映射（JSON 格式）。例如用户请求"gpt-4"时实际调用上游的"gpt-4o"，填{"gpt-4":"gpt-4o"}',
+  PRIORITY:
+    '渠道优先级。数字越大越优先被选中。当有多个同类型渠道且都支持同一模型时，优先生效高优先级的渠道',
+  WEIGHT:
+    '负载均衡权重。当多个渠道优先级相同时，权重越高的渠道分配到的请求越多。例如 A 权重 1、B 权重 2，则 B 拿到 2/3 的流量',
+  TEST_MODEL:
+    '连通性测试时使用的模型。点击"测试"按钮时用此模型发送测试请求',
+  AUTO_BAN:
+    '是否启用自动禁用。开启后，当渠道连续失败达到阈值时自动暂停该渠道，待恢复后再自动启用',
+  STATUS_CODE_MAPPING:
+    'HTTP 状态码映射（JSON 格式）。例如{"429":"503"}表示上游返回限流 429 时，给客户端返回 503 服务繁忙',
+  TAG: '给渠道打标签，方便在列表中按标签筛选和批量操作',
+  REMARK: '管理员内部备注，仅后台可见，不会暴露给用户',
+  SETTING: '渠道高级设置（JSON 格式）。一般不直接修改',
+  PARAM_OVERRIDE:
+    '请求参数覆写（JSON 格式）。用于强制覆盖发给上游的某些参数，如固定 temperature',
+  HEADER_OVERRIDE:
+    '请求头覆写（JSON 格式）。用于添加或修改发给上游的 HTTP 头',
+  MULTI_KEY_MODE: '多 Key 选择策略：随机（Random）或轮询（Polling）',
+  BATCH_ADD: '批量创建模式：一行一个 Key 可一次性创建多个相同配置的渠道',
+  OPENAI_ORG: 'OpenAI 组织 ID（可选）。仅 OpenAI 类型渠道需要填写',
 } as const
 
 // ============================================================================
@@ -362,22 +372,24 @@ export const FIELD_DESCRIPTIONS = {
 // ============================================================================
 
 export const MODEL_FETCHABLE_TYPES = new Set([
-  1, 4, 14, 17, 20, 23, 24, 25, 26, 27, 31, 34, 35, 40, 42, 43, 47, 48,
+  1, 4, 14, 17, 20, 23, 24, 25, 26, 27, 31, 34, 35, 40, 42, 43, 47, 48, 58,
 ])
 
 export const TYPE_TO_KEY_PROMPT: Record<number, string> = {
-  15: 'Format: APIKey|SecretKey',
-  18: 'Format: APPID|APISecret|APIKey',
-  22: 'Format: APIKey-AppId, e.g., fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041',
-  23: 'Format: AppId|SecretId|SecretKey',
-  33: 'Format: Ak|Sk|Region',
-  50: 'Format: AccessKey|SecretKey (or just ApiKey if upstream is New API)',
-  51: 'Format: Access Key ID|Secret Access Key',
-  57: 'Paste Codex OAuth JSON credential (access_token / refresh_token / account_id)',
+  15: '格式：APIKey|SecretKey',
+  18: '格式：APPID|APISecret|APIKey',
+  22: '格式：APIKey-AppId，例如 fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041',
+  23: '格式：AppId|SecretId|SecretKey',
+  33: '格式：Ak|Sk|Region',
+  50: '格式：AccessKey|SecretKey（如果是 New API 上游则只填 ApiKey）',
+  51: '格式：Access Key ID|Secret Access Key',
+  57: '粘贴 Codex OAuth JSON 凭证（access_token / refresh_token / account_id）',
+  58: '在 easyrouter.io 后台 → 个人设置 → API Keys 中生成的 sk- 开头的密钥',
 }
 
 export const CHANNEL_TYPE_WARNINGS: Record<number, string> = {
-  3: 'For channels added after May 10, 2025, no need to remove "." from model names during deployment',
-  8: 'If connecting to upstream One API or New API relay projects, use OpenAI type instead unless you know what you are doing',
-  37: 'Dify channels only support chatflow and agent, and agent does not support images',
+  3: '2025年5月10日后添加的 Azure 渠道无需再从模型名中去掉"."',
+  8: '如果上游是 One API 或 New API 中转项目，请选择 OpenAI 类型而非 Custom 类型',
+  37: 'Dify 渠道仅支持 chatflow 和 agent，agent 不支持图片',
+  58: 'EasyRouter 是 API 聚合中转平台。创建此渠道后，你的用户即可通过你的 New-API 间接使用 EasyRouter 上所有支持的 AI 模型。Base URL 留空即可使用内置默认地址 https://easyrouter.io',
 }

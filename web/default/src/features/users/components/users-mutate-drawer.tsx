@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { Pencil } from 'lucide-react'
+import { Pencil, BarChart2 as BarChartIcon, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getCurrencyDisplay, getCurrencyLabel } from '@/lib/currency'
@@ -154,11 +154,11 @@ export function UsersMutateDrawer({
         }}
       >
         <SheetContent className='flex h-dvh w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[600px]'>
-          <SheetHeader className='border-b px-4 py-3 text-start sm:px-6 sm:py-4'>
-            <SheetTitle>
+          <SheetHeader className='border-b border-border/50 bg-gradient-to-r from-card to-card/50 px-4 py-3 text-start sm:px-6 sm:py-4'>
+            <SheetTitle className='bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-xl font-semibold text-transparent'>
               {isUpdate ? t('Update') : t('Create')} {t('User')}
             </SheetTitle>
-            <SheetDescription>
+            <SheetDescription className='text-muted-foreground/70'>
               {isUpdate
                 ? t('Update the user by providing necessary info.')
                 : t('Add a new user by providing necessary info.')}
@@ -168,11 +168,12 @@ export function UsersMutateDrawer({
             <form
               id='user-form'
               onSubmit={form.handleSubmit(onSubmit)}
-              className='flex-1 space-y-4 overflow-y-auto px-3 py-3 pb-4 sm:space-y-6 sm:px-4'
+              className='flex-1 space-y-5 overflow-y-auto px-3 py-3 pb-4 sm:space-y-6 sm:px-4'
             >
               {/* Basic Information */}
-              <div className='space-y-4'>
-                <h3 className='text-sm font-medium'>
+              <div className='rounded-xl border border-border/50 bg-card/80 p-4 shadow-sm'>
+                <h3 className='mb-4 flex items-center gap-2 text-sm font-semibold'>
+                  <Pencil className='size-4 text-primary' />
                   {t('Basic Information')}
                 </h3>
 
@@ -279,8 +280,11 @@ export function UsersMutateDrawer({
 
               {/* Group & Quota Settings (Update only) */}
               {isUpdate && (
-                <div className='space-y-4'>
-                  <h3 className='text-sm font-medium'>{t('Group & Quota')}</h3>
+                <div className='rounded-xl border border-border/50 bg-card/80 p-4 shadow-sm'>
+                  <h3 className='mb-4 flex items-center gap-2 text-sm font-semibold'>
+                    <BarChartIcon className='size-4 text-primary' />
+                    {t('Group & Quota')}
+                  </h3>
 
                   <FormField
                     control={form.control}
@@ -381,11 +385,12 @@ export function UsersMutateDrawer({
 
               {/* Binding Information (Read-only) */}
               {isUpdate && (
-                <div className='space-y-4'>
-                  <h3 className='text-sm font-medium'>
+                <div className='rounded-xl border border-border/50 bg-card/80 p-4 shadow-sm'>
+                  <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold'>
+                    <Users className='size-4 text-primary' />
                     {t('Binding Information')}
                   </h3>
-                  <p className='text-muted-foreground text-xs'>
+                  <p className='mb-3 text-muted-foreground/70 text-xs'>
                     {t(
                       'Third-party account bindings (read-only, managed by user in profile settings)'
                     )}
@@ -394,7 +399,7 @@ export function UsersMutateDrawer({
                   <div className='space-y-3'>
                     {BINDING_FIELDS.map(({ key, label }) => (
                       <div key={key}>
-                        <Label className='text-muted-foreground text-xs'>
+                        <Label className='text-muted-foreground/70 text-xs'>
                           {t(label)}
                         </Label>
                         <Input
@@ -402,7 +407,7 @@ export function UsersMutateDrawer({
                             (currentRow?.[key as keyof User] as string) || '-'
                           }
                           disabled
-                          className='mt-1'
+                          className='mt-1 bg-card/50'
                         />
                       </div>
                     ))}

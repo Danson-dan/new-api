@@ -16,6 +16,12 @@ const getModelDefaults = (settings: BillingSettings) => ({
   ImageRatio: settings.ImageRatio,
   AudioRatio: settings.AudioRatio,
   AudioCompletionRatio: settings.AudioCompletionRatio,
+  DisplayPrice: settings.DisplayPrice,
+  UpstreamPrice: settings.UpstreamPrice,
+  DisplayDiscount: settings.DisplayDiscount,
+  ActualMarkup: settings.ActualMarkup,
+  DefaultDisplayDiscount: settings.DefaultDisplayDiscount,
+  DefaultActualMarkup: settings.DefaultActualMarkup,
   ExposeRatioEnabled: settings.ExposeRatioEnabled,
   BillingMode: settings['billing_setting.billing_mode'],
   BillingExpr: settings['billing_setting.billing_expr'],
@@ -82,8 +88,8 @@ const BILLING_SECTIONS = [
   },
   {
     id: 'model-pricing',
-    titleKey: 'Model Pricing',
-    descriptionKey: 'Configure model pricing ratios and tool prices',
+    titleKey: 'Model Pricing (Group & Model Pricing)',
+    descriptionKey: 'Configure model pricing ratios, tool prices and upstream sync',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Model Pricing'
@@ -91,7 +97,7 @@ const BILLING_SECTIONS = [
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_price_setting.prices']}
-        visibleTabs={['models', 'tool-prices', 'upstream-sync']}
+        visibleTabs={['models']}
       />
     ),
   },
@@ -195,7 +201,7 @@ const billingRegistry = createSectionRegistry<
   BillingSettings
 >({
   sections: BILLING_SECTIONS,
-  defaultSection: 'quota',
+  defaultSection: 'model-pricing',
   basePath: '/system-settings/billing',
   urlStyle: 'path',
 })

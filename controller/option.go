@@ -206,6 +206,7 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+		common.SetTheme(option.Value.(string))
 	case "GroupRatio":
 		err = ratio_setting.CheckGroupRatio(option.Value.(string))
 		if err != nil {

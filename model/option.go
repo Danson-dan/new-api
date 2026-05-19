@@ -177,6 +177,12 @@ func InitOptionMap() {
 	common.OptionMap["AutomaticDisableStatusCodes"] = operation_setting.AutomaticDisableStatusCodesToString()
 	common.OptionMap["AutomaticRetryStatusCodes"] = operation_setting.AutomaticRetryStatusCodesToString()
 	common.OptionMap["ExposeRatioEnabled"] = strconv.FormatBool(ratio_setting.IsExposeRatioEnabled())
+	common.OptionMap["DisplayPrice"] = ratio_setting.DisplayPrice2JSONString()
+	common.OptionMap["UpstreamPrice"] = ratio_setting.UpstreamPrice2JSONString()
+	common.OptionMap["DisplayDiscount"] = ratio_setting.DisplayDiscount2JSONString()
+	common.OptionMap["ActualMarkup"] = ratio_setting.ActualMarkup2JSONString()
+	common.OptionMap["DefaultDisplayDiscount"] = strconv.FormatFloat(ratio_setting.DefaultDisplayDiscount, 'f', -1, 64)
+	common.OptionMap["DefaultActualMarkup"] = strconv.FormatFloat(ratio_setting.DefaultActualMarkup, 'f', -1, 64)
 
 	// 自动添加所有注册的模型配置
 	modelConfigs := config.GlobalConfig.ExportAllConfigs()
@@ -461,6 +467,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.SystemName = value
 	case "Logo":
 		common.Logo = value
+	case "theme.frontend":
+		common.SetTheme(value)
 	case "WeChatServerAddress":
 		common.WeChatServerAddress = value
 	case "WeChatServerToken":
@@ -521,6 +529,18 @@ func updateOptionMap(key string, value string) (err error) {
 		err = ratio_setting.UpdateAudioRatioByJSONString(value)
 	case "AudioCompletionRatio":
 		err = ratio_setting.UpdateAudioCompletionRatioByJSONString(value)
+	case "DisplayPrice":
+		err = ratio_setting.UpdateDisplayPriceByJSONString(value)
+	case "UpstreamPrice":
+		err = ratio_setting.UpdateUpstreamPriceByJSONString(value)
+	case "DisplayDiscount":
+		err = ratio_setting.UpdateDisplayDiscountByJSONString(value)
+	case "ActualMarkup":
+		err = ratio_setting.UpdateActualMarkupByJSONString(value)
+	case "DefaultDisplayDiscount":
+		ratio_setting.DefaultDisplayDiscount, _ = strconv.ParseFloat(value, 64)
+	case "DefaultActualMarkup":
+		ratio_setting.DefaultActualMarkup, _ = strconv.ParseFloat(value, 64)
 	case "TopUpLink":
 		common.TopUpLink = value
 	//case "ChatLink":

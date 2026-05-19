@@ -171,14 +171,14 @@ export function RechargeFormCard({
     <TitledCard
       title={t('Add Funds')}
       description={t('Choose an amount and payment method')}
-      icon={<WalletCards className='h-4 w-4' />}
+      icon={<WalletCards className='h-4 w-4 text-white' />}
       action={
         onOpenBilling ? (
           <Button
             variant='outline'
             size='sm'
             onClick={onOpenBilling}
-            className='w-full gap-2 sm:w-auto'
+            className='btn-gradient w-full gap-2 sm:w-auto'
           >
             <Receipt className='h-4 w-4' />
             {t('Order History')}
@@ -219,28 +219,27 @@ export function RechargeFormCard({
                           key={index}
                           variant='outline'
                           className={cn(
-                            'hover:border-foreground flex min-h-16 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
+                            'min-h-16 flex-col items-start rounded-xl px-3 py-2.5 text-left whitespace-normal transition-all duration-300 hover:border-primary/50 hover:bg-gradient-to-br hover:from-primary/5 hover:to-primary/10 sm:min-h-[72px] sm:p-4',
                             selectedPreset === preset.value
-                              ? 'border-foreground bg-foreground/5'
-                              : 'border-muted'
+                              ? 'border-primary/70 bg-gradient-to-br from-primary/10 to-primary/5 shadow-md shadow-primary/10'
+                              : 'border-border/50'
                           )}
                           onClick={() => onSelectPreset(preset)}
                         >
                           <div className='flex w-full items-center justify-between'>
-                            <div className='text-base font-semibold sm:text-lg'>
+                            <div className='bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-base font-bold text-transparent sm:text-lg'>
                               {formatNumber(displayValue)}
                             </div>
                             {hasDiscount && (
-                              <div className='text-xs font-medium text-green-600'>
+                              <div className='badge-gradient rounded-full px-2 py-0.5 text-[10px] font-semibold'>
                                 {getDiscountLabel(discount)}
                               </div>
                             )}
                           </div>
                           <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
-                            Pay {formatCurrency(actualPrice)}
+                            <span className='text-foreground/80'>Pay</span> {formatCurrency(actualPrice)}
                             {hasDiscount && savedAmount > 0 && (
-                              <span className='text-green-600'>
-                                {' '}
+                              <span className='ml-1 text-success'>
                                 • Save {formatCurrency(savedAmount)}
                               </span>
                             )}

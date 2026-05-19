@@ -169,9 +169,15 @@ export interface SyncUpstreamResponse {
   message?: string
   data?: {
     created_models?: number
-    updated_models?: number
-    created_vendors?: number
     skipped_models?: string[]
+    created_list?: string[]
+    channel_results?: Array<{
+      channel_name: string
+      channel_id: number
+      models_fetched: number
+      models_created: number
+      error?: string
+    }>
   }
 }
 

@@ -35,6 +35,7 @@ type Pricing struct {
 	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 	BillingMode            string                  `json:"billing_mode,omitempty"`
 	BillingExpr            string                  `json:"billing_expr,omitempty"`
+	DisplayDiscount        float64                 `json:"display_discount,omitempty"`
 	PricingVersion         string                  `json:"pricing_version,omitempty"`
 }
 
@@ -336,6 +337,9 @@ func updatePricing() {
 				pricing.BillingMode = billingMode
 				pricing.BillingExpr = expr
 			}
+		}
+		if ratio_setting.HasDisplayDiscount(model) {
+			pricing.DisplayDiscount = ratio_setting.GetDisplayDiscount(model)
 		}
 		pricingMap = append(pricingMap, pricing)
 	}

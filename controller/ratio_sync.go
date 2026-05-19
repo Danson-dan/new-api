@@ -1027,3 +1027,49 @@ func GetSyncableChannels(c *gin.Context) {
 		"data":    syncableChannels,
 	})
 }
+
+// SaveUpstreamPriceFromSync 同步完成后保存上游正价
+// 从当前 ModelRatio 计算上游正价并保存到 UpstreamPrice
+func SaveUpstreamPriceFromSync(c *gin.Context) {
+	var req struct {
+		ModelRatios map[string]float64 `json:"model_ratios"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// 如果没有传入，则从当前配置中计算
+		req.ModelRatios = ratio_setting.GetDefaultModelRatioMap()
+		for k, v := range ratio_setting.GetModelPriceMap() {
+			req.ModelRatios[k] = v
+		}
+		// 也读取已配置的模型倍率
+		currentRatioJSON := ratio_setting.ModelRatio2JSONString()
+		var currentRatios map[string]float64
+		if err := json.Unmarshal([]byte(currentRatioJSON), &currentRatios); err == nil {
+			for k, v := range currentRatios {
+				req.ModelRatios[k] = v
+			}
+		}
+	}
+
+	// 计算上游正价：model_ratio * 2 = $/1M tokens
+	upstreamPrices := make(map[string]float64)
+	for modelName, ratio := range req.ModelRatios {
+		upstreamPrices[modelName] = ratio * 2.0
+	}
+
+	priceJSON, err := json.Marshal(upstreamPrices)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "序列化上游价格失败"})
+		return
+	}
+
+	if err := ratio_setting.UpdateUpstreamPriceByJSONString(string(priceJSON)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "保存上游价格失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "上游正价已更新",
+		"data":    upstreamPrices,
+	})
+}

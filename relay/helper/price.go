@@ -102,6 +102,16 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 				return types.PriceData{}, modelPriceNotConfiguredError(matchName, info.UserId)
 			}
 		}
+
+		// 优先使用 UpstreamPrice + ActualMarkup 计算实际扣费倍率
+		upstreamPrice, hasUpstream := ratio_setting.GetUpstreamPrice(info.OriginModelName)
+		if hasUpstream {
+			actualMarkup := ratio_setting.GetActualMarkup(info.OriginModelName)
+			// 等效倍率：正价 × 加价倍率 / 2 = modelRatio
+			marketRatio := upstreamPrice * actualMarkup / 2.0
+			modelRatio = marketRatio
+		}
+
 		completionRatio = ratio_setting.GetCompletionRatio(info.OriginModelName)
 		cacheRatio, _ = ratio_setting.GetCacheRatio(info.OriginModelName)
 		cacheCreationRatio, _ = ratio_setting.GetCreateCacheRatio(info.OriginModelName)
@@ -139,6 +149,8 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		}
 	}
 
+	displayPrice, _ := ratio_setting.GetDisplayPrice(info.OriginModelName, false)
+
 	priceData := types.PriceData{
 		FreeModel:            freeModel,
 		ModelPrice:           modelPrice,
@@ -154,11 +166,14 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		CacheCreation5mRatio: cacheCreationRatio5m,
 		CacheCreation1hRatio: cacheCreationRatio1h,
 		QuotaToPreConsume:    preConsumedQuota,
+		DisplayPrice:         displayPrice,
 	}
 
 	if common.DebugEnabled {
 		println(fmt.Sprintf("model_price_helper result: %s", priceData.ToSetting()))
 	}
+	logger.LogInfo(c, fmt.Sprintf("计价: model=%s ratio=%.4f groupRatio=%.4f preConsume=%d free=%v",
+		info.OriginModelName, modelRatio, groupRatioInfo.GroupRatio, preConsumedQuota, freeModel))
 	info.PriceData = priceData
 	return priceData, nil
 }

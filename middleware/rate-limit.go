@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,6 +54,7 @@ func redisRateLimiter(c *gin.Context, maxRequestNum int, duration int64, mark st
 		// See: https://stackoverflow.com/questions/50970900/why-is-time-since-returning-negative-durations-on-windows
 		if int64(nowTime.Sub(oldTime).Seconds()) < duration {
 			rdb.Expire(ctx, key, common.RateLimitKeyExpirationDuration)
+			logger.LogWarn(c, fmt.Sprintf("速率限制触发: ip=%s mark=%s max=%d duration=%ds", c.ClientIP(), mark, maxRequestNum, duration))
 			c.Status(http.StatusTooManyRequests)
 			c.Abort()
 			return
@@ -67,6 +69,7 @@ func redisRateLimiter(c *gin.Context, maxRequestNum int, duration int64, mark st
 func memoryRateLimiter(c *gin.Context, maxRequestNum int, duration int64, mark string) {
 	key := mark + c.ClientIP()
 	if !inMemoryRateLimiter.Request(key, maxRequestNum, duration) {
+		logger.LogWarn(c, fmt.Sprintf("速率限制触发(内存): ip=%s mark=%s max=%d duration=%ds", c.ClientIP(), mark, maxRequestNum, duration))
 		c.Status(http.StatusTooManyRequests)
 		c.Abort()
 		return
@@ -143,6 +146,7 @@ func userRateLimitFactory(maxRequestNum int, duration int64, mark string) func(c
 		}
 		key := fmt.Sprintf("%s:user:%d", mark, userId)
 		if !inMemoryRateLimiter.Request(key, maxRequestNum, duration) {
+			logger.LogWarn(c, fmt.Sprintf("用户速率限制触发(内存): userId=%d mark=%s max=%d duration=%ds", userId, mark, maxRequestNum, duration))
 			c.Status(http.StatusTooManyRequests)
 			c.Abort()
 			return
@@ -184,6 +188,7 @@ func userRedisRateLimiter(c *gin.Context, maxRequestNum int, duration int64, key
 		}
 		if int64(nowTime.Sub(oldTime).Seconds()) < duration {
 			rdb.Expire(ctx, key, common.RateLimitKeyExpirationDuration)
+			logger.LogWarn(c, fmt.Sprintf("用户速率限制触发: key=%s max=%d duration=%ds", key, maxRequestNum, duration))
 			c.Status(http.StatusTooManyRequests)
 			c.Abort()
 			return

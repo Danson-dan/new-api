@@ -1,5 +1,6 @@
 import { Activity, BarChart3, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@/lib/utils'
 import { formatCompactNumber, formatQuota } from '@/lib/format'
 import { getRoleLabel } from '@/lib/roles'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -81,18 +82,18 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
   ]
 
   return (
-    <div className='bg-card overflow-hidden rounded-lg border'>
+    <div className='overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-card via-card to-card/50 shadow-sm'>
       <div className='p-3 sm:p-5'>
         <div className='flex items-center gap-3 text-left sm:gap-4'>
-          <Avatar className='ring-background h-12 w-12 rounded-xl text-sm ring-2 sm:h-16 sm:w-16 sm:rounded-2xl sm:text-lg sm:ring-4'>
-            <AvatarFallback className='bg-primary/10 text-primary rounded-xl sm:rounded-2xl'>
+          <Avatar className='ring-background h-12 w-12 rounded-xl text-sm ring-2 shadow-md shadow-primary/20 sm:h-16 sm:w-16 sm:rounded-2xl sm:text-lg sm:ring-4'>
+            <AvatarFallback className='bg-gradient-primary rounded-xl sm:rounded-2xl text-white'>
               {initials}
             </AvatarFallback>
           </Avatar>
 
           <div className='min-w-0 flex-1 space-y-1.5 sm:space-y-3'>
             <div className='flex min-w-0 items-center gap-2'>
-              <h1 className='truncate text-xl font-semibold tracking-tight sm:text-2xl'>
+              <h1 className='truncate bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-xl font-bold tracking-tight text-transparent sm:text-2xl'>
                 {displayName}
               </h1>
               <StatusBadge
@@ -102,7 +103,7 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
               />
             </div>
 
-            <div className='text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:gap-x-4 sm:text-sm'>
+            <div className='text-muted-foreground/70 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:gap-x-4 sm:text-sm'>
               <span className='truncate'>@{profile.username}</span>
               {profile.email && (
                 <>
@@ -120,13 +121,18 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
           </div>
         </div>
       </div>
-      <div className='border-t'>
-        <div className='divide-border/60 grid grid-cols-3 divide-x'>
-          {stats.map((item) => (
-            <div key={item.label} className='min-w-0 px-3 py-3 sm:px-5 sm:py-4'>
+      <div className='border-t border-border/50'>
+        <div className='grid grid-cols-3'>
+          {stats.map((item, index) => (
+            <div key={item.label} className={cn(
+              'min-w-0 px-3 py-3 sm:px-5 sm:py-4',
+              index < stats.length - 1 && 'border-r border-border/30'
+            )}>
               <div className='flex items-center gap-2'>
-                <item.icon className='text-muted-foreground/60 size-3.5 shrink-0' />
-                <div className='text-muted-foreground truncate text-xs font-medium tracking-wider uppercase'>
+                <div className='bg-gradient-primary/10 flex size-6 items-center justify-center rounded-md'>
+                  <item.icon className='text-primary size-3.5' />
+                </div>
+                <div className='text-muted-foreground/70 truncate text-xs font-medium tracking-wider uppercase'>
                   {item.label}
                 </div>
               </div>
@@ -134,7 +140,7 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
               <div className='text-foreground mt-1.5 truncate font-mono text-lg font-bold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'>
                 {item.value}
               </div>
-              <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>
+              <div className='text-muted-foreground/50 mt-1 hidden text-xs md:block'>
                 {item.description}
               </div>
             </div>

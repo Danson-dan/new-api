@@ -20,6 +20,7 @@ type PriceData struct {
 	ImageRatio           float64
 	AudioRatio           float64
 	AudioCompletionRatio float64
+	DisplayPrice         float64 // 显示价格，用于前端展示（$/1M tokens）
 	OtherRatios          map[string]float64
 	UsePrice             bool
 	Quota                int // 按次计费的最终额度（MJ / Task）

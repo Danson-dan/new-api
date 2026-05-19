@@ -1,3 +1,8 @@
+/**
+ * @Author: Danson zheng
+ * @Date: 2026-05-07
+ * @Description: EasyRouter 风格的顶部导航组件
+ */
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Menu } from 'lucide-react'
@@ -15,12 +20,7 @@ type TopNavProps = React.HTMLAttributes<HTMLElement> & {
   links: TopNavLink[]
 }
 
-/**
- * 顶部导航栏组件
- * 在大屏幕显示水平导航，在小屏幕显示下拉菜单
- */
 export function TopNav({ className, links, ...props }: TopNavProps) {
-  // 规范化链接，确保所有可选属性都有默认值
   const normalizedLinks = useMemo(
     () =>
       links.map((link) => ({
@@ -34,15 +34,14 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
 
   return (
     <>
-      {/* 移动端下拉菜单 */}
       <div className='lg:hidden'>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger
-            render={<Button size='icon' variant='outline' className='size-7' />}
+            render={<Button size='icon' variant='ghost' className='size-8 hover:bg-primary/10' />}
           >
-            <Menu />
+            <Menu className='text-primary' />
           </DropdownMenuTrigger>
-          <DropdownMenuContent side='bottom' align='start'>
+          <DropdownMenuContent side='bottom' align='start' className='min-w-40'>
             {normalizedLinks.map(
               ({ title, href, isActive, disabled, external }) => (
                 <DropdownMenuItem
@@ -53,14 +52,20 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
                         href={href}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className={!isActive ? 'text-muted-foreground' : ''}
+                        className={cn(
+                          'flex items-center gap-2',
+                          isActive ? 'text-primary font-medium' : 'text-muted-foreground'
+                        )}
                       >
                         {title}
                       </a>
                     ) : (
                       <Link
                         to={href}
-                        className={!isActive ? 'text-muted-foreground' : ''}
+                        className={cn(
+                          'flex items-center gap-2',
+                          isActive ? 'text-primary font-medium' : 'text-muted-foreground'
+                        )}
                         disabled={disabled}
                       >
                         {title}
@@ -74,10 +79,9 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
         </DropdownMenu>
       </div>
 
-      {/* 桌面端水平导航 */}
       <nav
         className={cn(
-          'hidden items-center space-x-4 lg:flex lg:space-x-4 xl:space-x-6',
+          'hidden items-center gap-1 lg:flex xl:gap-2',
           className
         )}
         {...props}
@@ -89,8 +93,16 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
               href={href}
               target='_blank'
               rel='noopener noreferrer'
-              className={`hover:text-primary text-sm font-medium transition-colors ${isActive ? '' : 'text-muted-foreground'}`}
+              className={cn(
+                'relative rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                isActive
+                  ? 'text-primary bg-gradient-to-r from-primary/10 to-transparent'
+                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+              )}
             >
+              {isActive && (
+                <span className='absolute inset-x-0 -bottom-0.5 mx-auto h-0.5 w-8 rounded-full bg-gradient-to-r from-primary to-primary/50' />
+              )}
               {title}
             </a>
           ) : (
@@ -98,8 +110,16 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
               key={`${title}-${href}`}
               to={href}
               disabled={disabled}
-              className={`hover:text-primary text-sm font-medium transition-colors ${isActive ? '' : 'text-muted-foreground'}`}
+              className={cn(
+                'group relative rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                isActive
+                  ? 'text-primary bg-gradient-to-r from-primary/10 to-transparent'
+                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+              )}
             >
+              {isActive && (
+                <span className='absolute inset-x-0 -bottom-0.5 mx-auto h-0.5 w-8 rounded-full bg-gradient-to-r from-primary to-primary/50' />
+              )}
               {title}
             </Link>
           )

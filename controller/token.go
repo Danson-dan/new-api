@@ -8,6 +8,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
@@ -227,6 +228,7 @@ func AddToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	logger.LogInfo(c, fmt.Sprintf("令牌创建成功: userId=%d tokenName=%s", cleanToken.UserId, cleanToken.Name))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

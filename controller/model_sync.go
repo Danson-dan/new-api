@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,10 +15,11 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // 上游地址
@@ -49,6 +51,88 @@ func getUpstreamURLs(locale string) (modelsURL, vendorsURL string) {
 	return fmt.Sprintf("%s/api/newapi/models.json", base), fmt.Sprintf("%s/api/newapi/vendors.json", base)
 }
 
+// getEasyRouterChannels 查询所有启用状态的 EasyRouter 渠道
+func getEasyRouterChannels() ([]*model.Channel, error) {
+	channels, err := model.GetAllChannels(0, 0, true, false)
+	if err != nil {
+		return nil, err
+	}
+	var result []*model.Channel
+	for _, ch := range channels {
+		if ch.Type == constant.ChannelTypeEasyRouter && ch.Status == common.ChannelStatusEnabled {
+			result = append(result, ch)
+		}
+	}
+	return result, nil
+}
+
+// fetchModelsFromChannel 用渠道密钥调用 /v1/models，返回模型名列表
+func fetchModelsFromChannel(ctx context.Context, client *http.Client, ch *model.Channel) (modelNames []string, err error) {
+	baseURL := ch.GetBaseURL()
+	if baseURL == "" {
+		baseURL = constant.ChannelBaseURLs[ch.Type]
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+	modelsURL := baseURL + "/v1/models"
+
+	key, _, apiErr := ch.GetNextEnabledKey()
+	if apiErr != nil {
+		return nil, fmt.Errorf("获取密钥失败: %w", apiErr)
+	}
+	key = strings.TrimSpace(key)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, modelsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("构建请求失败: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+key)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		var errBody struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		limited := io.LimitReader(resp.Body, 4096)
+		body, _ := io.ReadAll(limited)
+		json.Unmarshal(body, &errBody)
+		if errBody.Error.Message != "" {
+			return nil, fmt.Errorf(errBody.Error.Message)
+		}
+		return nil, fmt.Errorf("HTTP %s", resp.Status)
+	}
+
+	var modelsResp OpenAIModelsResponse
+	limited := io.LimitReader(resp.Body, 5<<20)
+	body, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+	if err := common.Unmarshal(body, &modelsResp); err != nil {
+		return nil, fmt.Errorf("解析模型列表失败: %w", err)
+	}
+
+	seen := make(map[string]struct{})
+	for _, m := range modelsResp.Data {
+		name := strings.TrimSpace(m.ID)
+		if name == "" {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		modelNames = append(modelNames, name)
+	}
+	return modelNames, nil
+}
+
 type upstreamEnvelope[T any] struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
@@ -56,14 +140,21 @@ type upstreamEnvelope[T any] struct {
 }
 
 type upstreamModel struct {
-	Description string          `json:"description"`
-	Endpoints   json.RawMessage `json:"endpoints"`
-	Icon        string          `json:"icon"`
-	ModelName   string          `json:"model_name"`
-	NameRule    int             `json:"name_rule"`
-	Status      int             `json:"status"`
-	Tags        string          `json:"tags"`
-	VendorName  string          `json:"vendor_name"`
+	Description          string          `json:"description"`
+	Endpoints            json.RawMessage `json:"endpoints"`
+	Icon                 string          `json:"icon"`
+	ModelName            string          `json:"model_name"`
+	NameRule             int             `json:"name_rule"`
+	PricePerMInput       *float64        `json:"price_per_m_input"`
+	PricePerMOutput      *float64        `json:"price_per_m_output"`
+	PricePerMCacheRead   *float64        `json:"price_per_m_cache_read"`
+	PricePerMCacheWrite  *float64        `json:"price_per_m_cache_write"`
+	RatioCache           *float64        `json:"ratio_cache"`
+	RatioCompletion      *float64        `json:"ratio_completion"`
+	RatioModel           *float64        `json:"ratio_model"`
+	Status               int             `json:"status"`
+	Tags                 string          `json:"tags"`
+	VendorName           string          `json:"vendor_name"`
 }
 
 type upstreamVendor struct {
@@ -79,16 +170,6 @@ var (
 	cacheMutex sync.RWMutex
 )
 
-type overwriteField struct {
-	ModelName string   `json:"model_name"`
-	Fields    []string `json:"fields"`
-}
-
-type syncRequest struct {
-	Overwrite []overwriteField `json:"overwrite"`
-	Locale    string           `json:"locale"`
-}
-
 func newHTTPClient() *http.Client {
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 10)
 	dialer := &net.Dialer{Timeout: time.Duration(timeoutSec) * time.Second}
@@ -98,6 +179,9 @@ func newHTTPClient() *http.Client {
 		TLSHandshakeTimeout:   time.Duration(timeoutSec) * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		ResponseHeaderTimeout: time.Duration(timeoutSec) * time.Second,
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	}
 	if common.TLSInsecureSkipVerify {
 		transport.TLSClientConfig = common.InsecureTLSConfig
@@ -234,255 +318,127 @@ func fetchJSON[T any](ctx context.Context, url string, out *upstreamEnvelope[T])
 	return lastErr
 }
 
-func ensureVendorID(vendorName string, vendorByName map[string]upstreamVendor, vendorIDCache map[string]int, createdVendors *int) int {
-	if vendorName == "" {
-		return 0
-	}
-	if id, ok := vendorIDCache[vendorName]; ok {
-		return id
-	}
-	var existing model.Vendor
-	if err := model.DB.Where("name = ?", vendorName).First(&existing).Error; err == nil {
-		vendorIDCache[vendorName] = existing.Id
-		return existing.Id
-	}
-	uv := vendorByName[vendorName]
-	v := &model.Vendor{
-		Name:        vendorName,
-		Description: uv.Description,
-		Icon:        coalesce(uv.Icon, ""),
-		Status:      chooseStatus(uv.Status, 1),
-	}
-	if err := v.Insert(); err == nil {
-		*createdVendors++
-		vendorIDCache[vendorName] = v.Id
-		return v.Id
-	}
-	vendorIDCache[vendorName] = 0
-	return 0
-}
-
-// SyncUpstreamModels 同步上游模型与供应商：
-// - 默认仅创建「未配置模型」
-// - 可通过 overwrite 选择性覆盖更新本地已有模型的字段（前提：sync_official <> 0）
+// SyncUpstreamModels 从 EasyRouter 上游同步模型元数据
+// 流程：
+//  1. 获取所有启用的 EasyRouter 渠道
+//  2. 调 /v1/models 拉取模型名列表
+//  3. 对 models 表中不存在的模型名，自动创建元数据记录
+//  4. 自动创建 "EasyRouter" 供应商（如不存在）
 func SyncUpstreamModels(c *gin.Context) {
-	var req syncRequest
-	// 允许空体
-	_ = c.ShouldBindJSON(&req)
-	// 1) 获取未配置模型列表
-	missing, err := model.GetMissingModels()
+	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 30)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
+	easyRouterChannels, err := getEasyRouterChannels()
 	if err != nil {
-		common.SysError("failed to get missing models: " + err.Error())
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "获取模型列表失败，请稍后重试"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "查询渠道失败: " + err.Error()})
 		return
 	}
-
-	// 若既无缺失模型需要创建，也未指定覆盖更新字段，则无需请求上游数据，直接返回
-	if len(missing) == 0 && len(req.Overwrite) == 0 {
-		modelsURL, vendorsURL := getUpstreamURLs(req.Locale)
+	if len(easyRouterChannels) == 0 {
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data": gin.H{
-				"created_models":  0,
-				"created_vendors": 0,
-				"updated_models":  0,
-				"skipped_models":  []string{},
-				"created_list":    []string{},
-				"updated_list":    []string{},
-				"source": gin.H{
-					"locale":      req.Locale,
-					"models_url":  modelsURL,
-					"vendors_url": vendorsURL,
-				},
-			},
+			"success": false,
+			"message": "没有可用的 EasyRouter 渠道，请先配置并启用一个 easyrouter 类型渠道",
 		})
 		return
 	}
 
-	// 2) 拉取上游 vendors 与 models
-	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 15)
-	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
-	defer cancel()
+	client := getHTTPClient()
 
-	modelsURL, vendorsURL := getUpstreamURLs(req.Locale)
-	var vendorsEnv upstreamEnvelope[upstreamVendor]
-	var modelsEnv upstreamEnvelope[upstreamModel]
-	var fetchErr error
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		// vendor 失败不拦截
-		_ = fetchJSON(ctx, vendorsURL, &vendorsEnv)
-	}()
-	go func() {
-		defer wg.Done()
-		if err := fetchJSON(ctx, modelsURL, &modelsEnv); err != nil {
-			fetchErr = err
+	// 确保 "EasyRouter" 供应商存在
+	vendorName := "EasyRouter"
+	var vendor model.Vendor
+	if err := model.DB.Where("name = ?", vendorName).First(&vendor).Error; err != nil {
+		vendor = model.Vendor{
+			Name:        vendorName,
+			Description: "EasyRouter 中转平台",
 		}
-	}()
-	wg.Wait()
-	if fetchErr != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "获取上游模型失败: " + fetchErr.Error(), "locale": req.Locale, "source_urls": gin.H{"models_url": modelsURL, "vendors_url": vendorsURL}})
-		return
-	}
-
-	// 建立映射
-	vendorByName := make(map[string]upstreamVendor)
-	for _, v := range vendorsEnv.Data {
-		if v.Name != "" {
-			vendorByName[v.Name] = v
-		}
-	}
-	modelByName := make(map[string]upstreamModel)
-	for _, m := range modelsEnv.Data {
-		if m.ModelName != "" {
-			modelByName[m.ModelName] = m
+		if err := vendor.Insert(); err != nil {
+			common.SysError("创建 EasyRouter 供应商失败: " + err.Error())
 		}
 	}
 
-	// 3) 执行同步：仅创建缺失模型；若上游缺失该模型则跳过
+	// 获取 models 表中已有的模型名
+	var existingNames []string
+	model.DB.Model(&model.Model{}).Pluck("model_name", &existingNames)
+	existingSet := make(map[string]struct{}, len(existingNames))
+	for _, n := range existingNames {
+		existingSet[n] = struct{}{}
+	}
+
 	createdModels := 0
-	createdVendors := 0
-	updatedModels := 0
+	createdList := make([]string, 0, 100)
 	skipped := make([]string, 0)
-	createdList := make([]string, 0)
-	updatedList := make([]string, 0)
 
-	// 本地缓存：vendorName -> id
-	vendorIDCache := make(map[string]int)
+	type channelResult struct {
+		ChannelName   string   `json:"channel_name"`
+		ChannelID     int      `json:"channel_id"`
+		Error         string   `json:"error,omitempty"`
+		ModelsFetched int      `json:"models_fetched"`
+		ModelsCreated int      `json:"models_created"`
+	}
+	var channelResults []channelResult
 
-	for _, name := range missing {
-		up, ok := modelByName[name]
-		if !ok {
-			skipped = append(skipped, name)
+	for _, ch := range easyRouterChannels {
+		cr := channelResult{
+			ChannelName: ch.Name,
+			ChannelID:   ch.Id,
+		}
+
+		modelNames, fetchErr := fetchModelsFromChannel(ctx, client, ch)
+		if fetchErr != nil {
+			cr.Error = fetchErr.Error()
+			channelResults = append(channelResults, cr)
 			continue
 		}
+		cr.ModelsFetched = len(modelNames)
+		createdFromChannel := 0
 
-		// 若本地已存在且设置为不同步，则跳过（极端情况：缺失列表与本地状态不同步时）
-		var existing model.Model
-		if err := model.DB.Where("model_name = ?", name).First(&existing).Error; err == nil {
-			if existing.SyncOfficial == 0 {
-				skipped = append(skipped, name)
+		for _, modelName := range modelNames {
+			if _, exists := existingSet[modelName]; exists {
 				continue
 			}
-		}
+			existingSet[modelName] = struct{}{}
 
-		// 确保 vendor 存在
-		vendorID := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &createdVendors)
-
-		// 创建模型
-		mi := &model.Model{
-			ModelName:   name,
-			Description: up.Description,
-			Icon:        up.Icon,
-			Tags:        up.Tags,
-			VendorID:    vendorID,
-			Status:      chooseStatus(up.Status, 1),
-			NameRule:    up.NameRule,
+			mi := &model.Model{
+				ModelName: modelName,
+				VendorID:  vendor.Id,
+				Status:    1,
+			}
+			if err := mi.Insert(); err == nil {
+				createdFromChannel++
+				createdModels++
+				createdList = append(createdList, modelName)
+			} else {
+				skipped = append(skipped, modelName)
+			}
 		}
-		if err := mi.Insert(); err == nil {
-			createdModels++
-			createdList = append(createdList, name)
-		} else {
-			skipped = append(skipped, name)
-		}
+		cr.ModelsCreated = createdFromChannel
+		channelResults = append(channelResults, cr)
 	}
 
-	// 4) 处理可选覆盖（更新本地已有模型的差异字段）
-	if len(req.Overwrite) > 0 {
-		// vendorIDCache 已用于创建阶段，可复用
-		for _, ow := range req.Overwrite {
-			up, ok := modelByName[ow.ModelName]
-			if !ok {
-				continue
-			}
-			var local model.Model
-			if err := model.DB.Where("model_name = ?", ow.ModelName).First(&local).Error; err != nil {
-				continue
-			}
-
-			// 跳过被禁用官方同步的模型
-			if local.SyncOfficial == 0 {
-				continue
-			}
-
-			// 映射 vendor
-			newVendorID := ensureVendorID(up.VendorName, vendorByName, vendorIDCache, &createdVendors)
-
-			// 应用字段覆盖（事务）
-			_ = model.DB.Transaction(func(tx *gorm.DB) error {
-				needUpdate := false
-				if containsField(ow.Fields, "description") {
-					local.Description = up.Description
-					needUpdate = true
-				}
-				if containsField(ow.Fields, "icon") {
-					local.Icon = up.Icon
-					needUpdate = true
-				}
-				if containsField(ow.Fields, "tags") {
-					local.Tags = up.Tags
-					needUpdate = true
-				}
-				if containsField(ow.Fields, "vendor") {
-					local.VendorID = newVendorID
-					needUpdate = true
-				}
-				if containsField(ow.Fields, "name_rule") {
-					local.NameRule = up.NameRule
-					needUpdate = true
-				}
-				if containsField(ow.Fields, "status") {
-					local.Status = chooseStatus(up.Status, local.Status)
-					needUpdate = true
-				}
-				if !needUpdate {
-					return nil
-				}
-				if err := tx.Save(&local).Error; err != nil {
-					return err
-				}
-				updatedModels++
-				updatedList = append(updatedList, ow.ModelName)
-				return nil
-			})
+	ginResults := make([]gin.H, len(channelResults))
+	for i, cr := range channelResults {
+		item := gin.H{
+			"channel_name":   cr.ChannelName,
+			"channel_id":     cr.ChannelID,
+			"models_fetched": cr.ModelsFetched,
+			"models_created": cr.ModelsCreated,
 		}
+		if cr.Error != "" {
+			item["error"] = cr.Error
+		}
+		ginResults[i] = item
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
 			"created_models":  createdModels,
-			"created_vendors": createdVendors,
-			"updated_models":  updatedModels,
 			"skipped_models":  skipped,
 			"created_list":    createdList,
-			"updated_list":    updatedList,
-			"source": gin.H{
-				"locale":      req.Locale,
-				"models_url":  modelsURL,
-				"vendors_url": vendorsURL,
-			},
+			"channel_results": ginResults,
 		},
 	})
-}
-
-func containsField(fields []string, key string) bool {
-	key = strings.ToLower(strings.TrimSpace(key))
-	for _, f := range fields {
-		if strings.ToLower(strings.TrimSpace(f)) == key {
-			return true
-		}
-	}
-	return false
-}
-
-func coalesce(a, b string) string {
-	if strings.TrimSpace(a) != "" {
-		return a
-	}
-	return b
 }
 
 func chooseStatus(primary, fallback int) int {
@@ -629,6 +585,198 @@ func SyncUpstreamPreview(c *gin.Context) {
 				"models_url":  modelsURL,
 				"vendors_url": vendorsURL,
 			},
+		},
+	})
+}
+
+// SyncUpstreamModelPricing 从 EasyRouter 渠道同步模型定价
+// 流程：
+//  1. 查 DB 中所有启用的 EasyRouter 渠道
+//  2. 调 /v1/models 拉取模型名列表
+//  3. 用内置 defaultModelRatio 计算 UpstreamPrice（正价）和 ModelRatio
+//  4. 同时创建 models 表元数据（若模型不存在）
+//  5. 通过 model.UpdateOption 持久化到 options 表 + 更新内存
+func SyncUpstreamModelPricing(c *gin.Context) {
+	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 30)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
+	defer cancel()
+
+	easyRouterChannels, err := getEasyRouterChannels()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "查询渠道失败: " + err.Error(),
+		})
+		return
+	}
+	if len(easyRouterChannels) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "没有可用的 EasyRouter 渠道，请先配置并启用一个 easyrouter 类型渠道",
+		})
+		return
+	}
+
+	client := getHTTPClient()
+	defaultRatios := ratio_setting.GetDefaultModelRatioMap()
+
+	// 确保 "EasyRouter" 供应商和已存在的模型名（用于创建元数据）
+	vendorName := "EasyRouter"
+	var vendor model.Vendor
+	if err := model.DB.Where("name = ?", vendorName).First(&vendor).Error; err != nil {
+		vendor = model.Vendor{
+			Name:        vendorName,
+			Description: "EasyRouter 中转平台",
+		}
+		if err := vendor.Insert(); err != nil {
+			common.SysError("创建 EasyRouter 供应商失败: " + err.Error())
+		}
+	}
+
+	var existingModelNames []string
+	model.DB.Model(&model.Model{}).Pluck("model_name", &existingModelNames)
+	existingModelSet := make(map[string]struct{}, len(existingModelNames))
+	for _, n := range existingModelNames {
+		existingModelSet[n] = struct{}{}
+	}
+	newModelsCreated := 0
+
+	existingUpstreamPrice := ratio_setting.GetUpstreamPriceMap()
+	existingModelRatio := ratio_setting.GetModelRatioCopy()
+	existingCompletionRatio := ratio_setting.GetCompletionRatioCopy()
+
+	upstreamPrices := make(map[string]float64, len(existingUpstreamPrice)+100)
+	modelRatios := make(map[string]float64, len(existingModelRatio)+100)
+	completionRatios := make(map[string]float64, len(existingCompletionRatio)+100)
+
+	for k, v := range existingUpstreamPrice {
+		upstreamPrices[k] = v
+	}
+	for k, v := range existingModelRatio {
+		modelRatios[k] = v
+	}
+	for k, v := range existingCompletionRatio {
+		completionRatios[k] = v
+	}
+
+	type channelResult struct {
+		ChannelName    string `json:"channel_name"`
+		ChannelID      int    `json:"channel_id"`
+		Error          string `json:"error,omitempty"`
+		ModelsFetched  int    `json:"models_fetched"`
+		ModelsSynced   int    `json:"models_synced"`
+	}
+	var channelResults []channelResult
+	totalSynced := 0
+	syncedList := make([]string, 0, 100)
+	seenModels := make(map[string]struct{})
+
+	for _, ch := range easyRouterChannels {
+		cr := channelResult{
+			ChannelName: ch.Name,
+			ChannelID:   ch.Id,
+		}
+
+		modelNames, fetchErr := fetchModelsFromChannel(ctx, client, ch)
+		if fetchErr != nil {
+			cr.Error = fetchErr.Error()
+			channelResults = append(channelResults, cr)
+			continue
+		}
+		cr.ModelsFetched = len(modelNames)
+		syncedThisChannel := 0
+
+		for _, modelName := range modelNames {
+			if _, seen := seenModels[modelName]; seen {
+				continue
+			}
+			seenModels[modelName] = struct{}{}
+
+			// 创建 models 表元数据（如果还不存在）
+			if _, exists := existingModelSet[modelName]; !exists {
+				mi := &model.Model{
+					ModelName: modelName,
+					VendorID:  vendor.Id,
+					Status:    1,
+				}
+				if err := mi.Insert(); err == nil {
+					existingModelSet[modelName] = struct{}{}
+					newModelsCreated++
+				}
+			}
+
+			normalizedName := ratio_setting.FormatMatchingModelName(modelName)
+			var ratio float64
+			var found bool
+			if r, ok := defaultRatios[normalizedName]; ok {
+				ratio = r
+				found = true
+			} else if r, ok := defaultRatios[modelName]; ok {
+				ratio = r
+				found = true
+			}
+			if !found || ratio <= 0 {
+				continue
+			}
+
+			upstreamPrices[modelName] = ratio * 2.0
+			modelRatios[modelName] = ratio
+			if compRatio := ratio_setting.GetCompletionRatio(modelName); compRatio > 0 {
+				completionRatios[modelName] = compRatio
+			}
+
+			syncedThisChannel++
+			totalSynced++
+			syncedList = append(syncedList, modelName)
+		}
+		cr.ModelsSynced = syncedThisChannel
+		channelResults = append(channelResults, cr)
+	}
+
+	if totalSynced == 0 && len(channelResults) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "未能从任何渠道获取到模型列表",
+		})
+		return
+	}
+
+	upstreamPriceJSON, _ := json.Marshal(upstreamPrices)
+	modelRatioJSON, _ := json.Marshal(modelRatios)
+	completionRatioJSON, _ := json.Marshal(completionRatios)
+
+	if err := model.UpdateOption("UpstreamPrice", string(upstreamPriceJSON)); err != nil {
+		common.SysError("持久化 UpstreamPrice 失败: " + err.Error())
+	}
+	if err := model.UpdateOption("ModelRatio", string(modelRatioJSON)); err != nil {
+		common.SysError("持久化 ModelRatio 失败: " + err.Error())
+	}
+	if err := model.UpdateOption("CompletionRatio", string(completionRatioJSON)); err != nil {
+		common.SysError("持久化 CompletionRatio 失败: " + err.Error())
+	}
+
+	ratio_setting.InvalidateExposedDataCache()
+
+	ginResults := make([]gin.H, len(channelResults))
+	for i, cr := range channelResults {
+		ginResults[i] = gin.H{
+			"channel_name":   cr.ChannelName,
+			"channel_id":     cr.ChannelID,
+			"models_fetched": cr.ModelsFetched,
+			"models_synced":  cr.ModelsSynced,
+		}
+		if cr.Error != "" {
+			ginResults[i]["error"] = cr.Error
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"synced_models":     totalSynced,
+			"synced_list":       syncedList,
+			"new_models_created": newModelsCreated,
+			"channel_results":   ginResults,
 		},
 	})
 }

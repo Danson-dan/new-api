@@ -47,3 +47,15 @@ export async function fetchUpstreamRatios(request: FetchUpstreamRatiosRequest) {
   )
   return res.data
 }
+
+export async function saveUpstreamPrice(modelRatios: Record<string, number>) {
+  const res = await api.post('/api/ratio_sync/save_upstream_price', {
+    model_ratios: modelRatios,
+  })
+  return res.data
+}
+
+export async function syncUpstreamModelPricing() {
+  const res = await api.post('/api/models/sync_upstream_pricing')
+  return res.data
+}

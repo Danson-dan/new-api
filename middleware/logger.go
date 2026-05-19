@@ -2,9 +2,12 @@ package middleware
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const RouteTagKey = "route_tag"
@@ -37,4 +40,38 @@ func SetUpLogger(server *gin.Engine) {
 			param.Path,
 		)
 	}))
+}
+
+func newGinZapLogger() gin.HandlerFunc {
+	logger, _ := zap.NewProduction()
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		_ = c.Request.URL.RawQuery
+
+		c.Next()
+
+		latency := time.Since(start)
+		statusCode := c.Writer.Status()
+
+		fields := []zapcore.Field{
+			zap.Int("status", statusCode),
+			zap.String("method", c.Request.Method),
+			zap.String("path", path),
+			zap.String("ip", c.ClientIP()),
+			zap.Duration("latency", latency),
+		}
+
+		if requestID := c.GetString(common.RequestIdKey); requestID != "" {
+			fields = append(fields, zap.String("requestId", requestID))
+		}
+
+		if len(c.Errors) > 0 {
+			for _, e := range c.Errors {
+				logger.Error(e.Err.Error(), fields...)
+			}
+		} else {
+			logger.Info(path, fields...)
+		}
+	}
 }

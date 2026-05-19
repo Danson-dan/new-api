@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/common/limiter"
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/setting"
 
 	"github.com/gin-gonic/gin"
@@ -90,6 +91,7 @@ func redisRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) g
 			return
 		}
 		if !allowed {
+			logger.LogWarn(c, fmt.Sprintf("模型请求速率限制触发: userId=%s model=%s max=%d duration=%dm", userId, c.GetString("original_model"), successMaxCount, setting.ModelRequestRateLimitDurationMinutes))
 			abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到请求数限制：%d分钟内最多请求%d次", setting.ModelRequestRateLimitDurationMinutes, successMaxCount))
 			return
 		}
@@ -114,7 +116,8 @@ func redisRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) g
 			}
 
 			if !allowed {
-				abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到总请求数限制：%d分钟内最多请求%d次，包括失败次数，请检查您的请求是否正确", setting.ModelRequestRateLimitDurationMinutes, totalMaxCount))
+				logger.LogWarn(c, fmt.Sprintf("模型总请求数限制触发: userId=%s max=%d duration=%dm", userId, totalMaxCount, setting.ModelRequestRateLimitDurationMinutes))
+				abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到总请求数限制：%d分钟内最多请求%d次", setting.ModelRequestRateLimitDurationMinutes, totalMaxCount))
 			}
 		}
 
@@ -139,6 +142,7 @@ func memoryRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) 
 
 		// 1. 检查总请求数限制（当totalMaxCount为0时跳过）
 		if totalMaxCount > 0 && !inMemoryRateLimiter.Request(totalKey, totalMaxCount, duration) {
+			logger.LogWarn(c, fmt.Sprintf("模型总请求数限制触发(内存): userId=%s max=%d", userId, totalMaxCount))
 			c.Status(http.StatusTooManyRequests)
 			c.Abort()
 			return
@@ -148,6 +152,7 @@ func memoryRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) 
 		// 使用一个临时key来检查限制，这样可以避免实际记录
 		checkKey := successKey + "_check"
 		if !inMemoryRateLimiter.Request(checkKey, successMaxCount, duration) {
+			logger.LogWarn(c, fmt.Sprintf("模型请求速率限制触发(内存): userId=%s max=%d", userId, successMaxCount))
 			c.Status(http.StatusTooManyRequests)
 			c.Abort()
 			return

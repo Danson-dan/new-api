@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,6 +41,8 @@ func redisEmailVerificationRateLimiter(c *gin.Context) {
 		return
 	}
 
+	logger.LogWarn(c, fmt.Sprintf("邮箱验证码发送频率限制触发: ip=%s", c.ClientIP()))
+
 	// 获取剩余等待时间
 	ttl, err := rdb.TTL(ctx, key).Result()
 	waitSeconds := int64(EmailVerificationDuration)
@@ -58,6 +61,7 @@ func memoryEmailVerificationRateLimiter(c *gin.Context) {
 	key := EmailVerificationRateLimitMark + ":" + c.ClientIP()
 
 	if !inMemoryRateLimiter.Request(key, EmailVerificationMaxRequests, EmailVerificationDuration) {
+		logger.LogWarn(c, fmt.Sprintf("邮箱验证码发送频率限制触发(内存): ip=%s", c.ClientIP()))
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"success": false,
 			"message": "发送过于频繁，请稍后再试",

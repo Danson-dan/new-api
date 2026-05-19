@@ -318,6 +318,8 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *service
 	if newAPIError != nil {
 		return nil, newAPIError
 	}
+	logger.LogInfo(c, fmt.Sprintf("渠道选择: channel=%s(#%d) type=%d model=%s group=%s retry=%d",
+		channel.Name, channel.Id, channel.Type, info.OriginModelName, selectGroup, retryParam.GetRetry()))
 	return channel, nil
 }
 

@@ -57,6 +57,10 @@ type ModelRatioVisualEditorProps = {
   imageRatio: string
   audioRatio: string
   audioCompletionRatio: string
+  displayPrice: string
+  upstreamPrice: string
+  displayDiscount: string
+  actualMarkup: string
   billingMode: string
   billingExpr: string
   onChange: (field: string, value: string) => void
@@ -72,10 +76,15 @@ type ModelRow = {
   imageRatio?: string
   audioRatio?: string
   audioCompletionRatio?: string
+  displayPrice?: string
+  upstreamPrice?: string
+  displayDiscount?: string
+  actualMarkup?: string
   billingMode?: string
   billingExpr?: string
   requestRuleExpr?: string
   hasConflict: boolean
+  source: 'built-in' | 'upstream'
 }
 
 const STORAGE_KEY = 'model-ratio-column-visibility'
@@ -187,6 +196,10 @@ export const ModelRatioVisualEditor = memo(
     imageRatio,
     audioRatio,
     audioCompletionRatio,
+    displayPrice,
+    upstreamPrice,
+    displayDiscount: displayDiscountRaw,
+    actualMarkup: actualMarkupRaw,
     billingMode,
     billingExpr,
     onChange,
@@ -276,6 +289,22 @@ export const ModelRatioVisualEditor = memo(
         audioCompletionRatio,
         { fallback: {}, context: 'audio completion ratios' }
       )
+      const displayPriceMap = safeJsonParse<Record<string, number>>(
+        displayPrice,
+        { fallback: {}, context: 'display prices' }
+      )
+      const upstreamPriceMap = safeJsonParse<Record<string, number>>(
+        upstreamPrice,
+        { fallback: {}, context: 'upstream prices' }
+      )
+      const displayDiscountMapR = safeJsonParse<Record<string, number>>(
+        displayDiscountRaw,
+        { fallback: {}, context: 'display discounts' }
+      )
+      const actualMarkupMapR = safeJsonParse<Record<string, number>>(
+        actualMarkupRaw,
+        { fallback: {}, context: 'actual markups' }
+      )
       const billingModeMap = safeJsonParse<Record<string, string>>(
         billingMode,
         {
@@ -300,6 +329,10 @@ export const ModelRatioVisualEditor = memo(
         ...Object.keys(imageMap),
         ...Object.keys(audioMap),
         ...Object.keys(audioCompletionMap),
+        ...Object.keys(displayPriceMap),
+        ...Object.keys(upstreamPriceMap),
+        ...Object.keys(displayDiscountMapR),
+        ...Object.keys(actualMarkupMapR),
         ...Object.keys(billingModeMap),
         ...Object.keys(billingExprMap),
       ])
@@ -313,6 +346,10 @@ export const ModelRatioVisualEditor = memo(
         const image = imageMap[name]?.toString() || ''
         const audio = audioMap[name]?.toString() || ''
         const audioCompletion = audioCompletionMap[name]?.toString() || ''
+        const display = displayPriceMap[name]?.toString() || ''
+        const upstream = upstreamPriceMap[name]?.toString() || ''
+        const discount = displayDiscountMapR[name]?.toString() || ''
+        const markup = actualMarkupMapR[name]?.toString() || ''
 
         const modeForModel = billingModeMap[name]
         if (modeForModel === 'tiered_expr') {
@@ -335,7 +372,12 @@ export const ModelRatioVisualEditor = memo(
             imageRatio: image,
             audioRatio: audio,
             audioCompletionRatio: audioCompletion,
+            displayPrice: display,
+            upstreamPrice: upstream,
+            displayDiscount: discount,
+            actualMarkup: markup,
             hasConflict: false,
+            source: (upstreamPriceMap[name] !== undefined ? 'upstream' : 'built-in') as 'built-in' | 'upstream',
           }
         }
 
@@ -349,6 +391,10 @@ export const ModelRatioVisualEditor = memo(
           imageRatio: image,
           audioRatio: audio,
           audioCompletionRatio: audioCompletion,
+          displayPrice: display,
+          upstreamPrice: upstream,
+          displayDiscount: discount,
+          actualMarkup: markup,
           billingMode: price !== '' ? 'per-request' : 'per-token',
           hasConflict:
             price !== '' &&
@@ -359,6 +405,7 @@ export const ModelRatioVisualEditor = memo(
               image !== '' ||
               audio !== '' ||
               audioCompletion !== ''),
+          source: (upstreamPriceMap[name] !== undefined ? 'upstream' : 'built-in') as 'built-in' | 'upstream',
         }
       })
 
@@ -372,6 +419,10 @@ export const ModelRatioVisualEditor = memo(
       imageRatio,
       audioRatio,
       audioCompletionRatio,
+      displayPrice,
+      upstreamPrice,
+      displayDiscountRaw,
+      actualMarkupRaw,
       billingMode,
       billingExpr,
     ])
@@ -409,6 +460,7 @@ export const ModelRatioVisualEditor = memo(
           imageRatio: model.imageRatio,
           audioRatio: model.audioRatio,
           audioCompletionRatio: model.audioCompletionRatio,
+          displayPrice: model.displayPrice,
           billingMode:
             model.billingMode === 'tiered_expr'
               ? 'tiered_expr'
@@ -486,6 +538,22 @@ export const ModelRatioVisualEditor = memo(
           audioCompletionRatio,
           { fallback: {}, silent: true }
         )
+        const displayPriceMap = safeJsonParse<Record<string, number>>(
+          displayPrice,
+          { fallback: {}, silent: true }
+        )
+        const upstreamPriceMapLocal = safeJsonParse<Record<string, number>>(
+          upstreamPrice,
+          { fallback: {}, silent: true }
+        )
+        const displayDiscountMapLocal = safeJsonParse<Record<string, number>>(
+          displayDiscountRaw,
+          { fallback: {}, silent: true }
+        )
+        const actualMarkupMapLocal = safeJsonParse<Record<string, number>>(
+          actualMarkupRaw,
+          { fallback: {}, silent: true }
+        )
         const billingModeMap = safeJsonParse<Record<string, string>>(
           billingMode,
           { fallback: {}, silent: true }
@@ -503,6 +571,10 @@ export const ModelRatioVisualEditor = memo(
         delete imageMap[name]
         delete audioMap[name]
         delete audioCompletionMap[name]
+        delete displayPriceMap[name]
+        delete upstreamPriceMapLocal[name]
+        delete displayDiscountMapLocal[name]
+        delete actualMarkupMapLocal[name]
         delete billingModeMap[name]
         delete billingExprMap[name]
 
@@ -516,6 +588,19 @@ export const ModelRatioVisualEditor = memo(
         onChange(
           'AudioCompletionRatio',
           JSON.stringify(audioCompletionMap, null, 2)
+        )
+        onChange('DisplayPrice', JSON.stringify(displayPriceMap, null, 2))
+        onChange(
+          'UpstreamPrice',
+          JSON.stringify(upstreamPriceMapLocal, null, 2)
+        )
+        onChange(
+          'DisplayDiscount',
+          JSON.stringify(displayDiscountMapLocal, null, 2)
+        )
+        onChange(
+          'ActualMarkup',
+          JSON.stringify(actualMarkupMapLocal, null, 2)
         )
         onChange(
           'billing_setting.billing_mode',
@@ -535,6 +620,10 @@ export const ModelRatioVisualEditor = memo(
         imageRatio,
         audioRatio,
         audioCompletionRatio,
+        displayPrice,
+        upstreamPrice,
+        displayDiscountRaw,
+        actualMarkupRaw,
         billingMode,
         billingExpr,
         onChange,
@@ -611,6 +700,21 @@ export const ModelRatioVisualEditor = memo(
           meta: { label: t('Mode') },
         },
         {
+          accessorKey: 'source' as const,
+          header: () => <span>{t('来源')}</span>,
+          cell: ({ row }) => {
+            const isUp = row?.original?.source === 'upstream'
+            return (
+              <StatusBadge
+                label={isUp ? '上游' : '内置'}
+                variant={isUp ? 'success' : 'info'}
+                copyable={false}
+              />
+            )
+          },
+          filterFn: 'arrIncludesSome' as const,
+        },
+        {
           id: 'priceSummary',
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title={t('Price summary')} />
@@ -630,6 +734,79 @@ export const ModelRatioVisualEditor = memo(
               getPriceSummary(rowB.original, t)
             ),
           meta: { label: t('Price summary') },
+        },
+        {
+          id: 'upstreamPrice',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={t('正价')} />
+          ),
+          cell: ({ row }) => {
+            const up = toNumberOrNull(row.original.upstreamPrice)
+            return up !== null ? (
+              <span className='text-muted-foreground'>
+                ${up}
+                <span className='text-xs'>/1M</span>
+              </span>
+            ) : (
+              <span className='text-muted-foreground/50 text-xs'>{t('未同步')}</span>
+            )
+          },
+          meta: { label: t('正价') },
+        },
+        {
+          id: 'displayDiscount',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={t('折扣')} />
+          ),
+          cell: ({ row }) => {
+            const disc = toNumberOrNull(row.original.displayDiscount)
+            return disc !== null ? (
+              <span className='text-orange-500 font-medium'>
+                {(100 - disc).toFixed(0)}% OFF
+              </span>
+            ) : (
+              <span className='text-muted-foreground/50 text-xs'>{t('默认')}</span>
+            )
+          },
+          meta: { label: t('折扣') },
+        },
+        {
+          id: 'displayPriceCalc',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={t('现价')} />
+          ),
+          cell: ({ row }) => {
+            const up = toNumberOrNull(row.original.upstreamPrice)
+            if (up === null)
+              return <span className='text-muted-foreground/50 text-xs'>-</span>
+            const disc = row.original.displayDiscount
+              ? toNumberOrNull(row.original.displayDiscount)
+              : null
+            const finalDisc = disc ?? 85
+            const displayP = (up * finalDisc / 100).toFixed(2)
+            return (
+              <span className='font-medium text-green-600 dark:text-green-400'>
+                ${displayP}
+                <span className='text-xs font-normal'>/1M</span>
+              </span>
+            )
+          },
+          meta: { label: t('现价') },
+        },
+        {
+          id: 'actualMarkup',
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={t('加价倍数')} />
+          ),
+          cell: ({ row }) => {
+            const mu = toNumberOrNull(row.original.actualMarkup)
+            return mu !== null ? (
+              <span className='text-red-500 font-medium'>{mu}x</span>
+            ) : (
+              <span className='text-muted-foreground/50 text-xs'>{t('默认')}</span>
+            )
+          },
+          meta: { label: t('加价倍数') },
         },
         {
           id: 'actions',
@@ -721,12 +898,28 @@ export const ModelRatioVisualEditor = memo(
           audioCompletionRatio,
           { fallback: {}, silent: true }
         )
+        const displayPriceMap = safeJsonParse<Record<string, number>>(
+          displayPrice,
+          { fallback: {}, silent: true }
+        )
         const billingModeMap = safeJsonParse<Record<string, string>>(
           billingMode,
           { fallback: {}, silent: true }
         )
         const billingExprMap = safeJsonParse<Record<string, string>>(
           billingExpr,
+          { fallback: {}, silent: true }
+        )
+        const upstreamPriceMapLocal = safeJsonParse<Record<string, number>>(
+          upstreamPrice,
+          { fallback: {}, silent: true }
+        )
+        const displayDiscountMapLocal = safeJsonParse<Record<string, number>>(
+          displayDiscountRaw,
+          { fallback: {}, silent: true }
+        )
+        const actualMarkupMapLocal = safeJsonParse<Record<string, number>>(
+          actualMarkupRaw,
           { fallback: {}, silent: true }
         )
 
@@ -749,6 +942,7 @@ export const ModelRatioVisualEditor = memo(
           delete imageMap[name]
           delete audioMap[name]
           delete audioCompletionMap[name]
+          delete displayPriceMap[name]
           delete billingModeMap[name]
           delete billingExprMap[name]
 
@@ -773,8 +967,16 @@ export const ModelRatioVisualEditor = memo(
             setIfPresent(imageMap, name, data.imageRatio)
             setIfPresent(audioMap, name, data.audioRatio)
             setIfPresent(audioCompletionMap, name, data.audioCompletionRatio)
+            setIfPresent(displayPriceMap, name, data.displayPrice)
+            setIfPresent(upstreamPriceMapLocal, name, data.upstreamPrice)
+            setIfPresent(displayDiscountMapLocal, name, data.displayDiscount)
+            setIfPresent(actualMarkupMapLocal, name, data.actualMarkup)
           } else if (data.price && data.price !== '') {
             setIfPresent(priceMap, name, data.price)
+            setIfPresent(displayPriceMap, name, data.displayPrice)
+            setIfPresent(upstreamPriceMapLocal, name, data.upstreamPrice)
+            setIfPresent(displayDiscountMapLocal, name, data.displayDiscount)
+            setIfPresent(actualMarkupMapLocal, name, data.actualMarkup)
           } else {
             setIfPresent(ratioMap, name, data.ratio)
             setIfPresent(cacheMap, name, data.cacheRatio)
@@ -783,6 +985,10 @@ export const ModelRatioVisualEditor = memo(
             setIfPresent(imageMap, name, data.imageRatio)
             setIfPresent(audioMap, name, data.audioRatio)
             setIfPresent(audioCompletionMap, name, data.audioCompletionRatio)
+            setIfPresent(displayPriceMap, name, data.displayPrice)
+            setIfPresent(upstreamPriceMapLocal, name, data.upstreamPrice)
+            setIfPresent(displayDiscountMapLocal, name, data.displayDiscount)
+            setIfPresent(actualMarkupMapLocal, name, data.actualMarkup)
           }
         })
 
@@ -796,6 +1002,16 @@ export const ModelRatioVisualEditor = memo(
         onChange(
           'AudioCompletionRatio',
           JSON.stringify(audioCompletionMap, null, 2)
+        )
+        onChange('DisplayPrice', JSON.stringify(displayPriceMap, null, 2))
+        onChange('UpstreamPrice', JSON.stringify(upstreamPriceMapLocal, null, 2))
+        onChange(
+          'DisplayDiscount',
+          JSON.stringify(displayDiscountMapLocal, null, 2)
+        )
+        onChange(
+          'ActualMarkup',
+          JSON.stringify(actualMarkupMapLocal, null, 2)
         )
         onChange(
           'billing_setting.billing_mode',
@@ -815,6 +1031,10 @@ export const ModelRatioVisualEditor = memo(
         imageRatio,
         audioRatio,
         audioCompletionRatio,
+        displayPrice,
+        upstreamPrice,
+        displayDiscountRaw,
+        actualMarkupRaw,
         billingMode,
         billingExpr,
         onChange,
@@ -865,6 +1085,15 @@ export const ModelRatioVisualEditor = memo(
               table={table}
               searchPlaceholder={t('Search models...')}
               filters={[
+                {
+                  columnId: 'source',
+                  title: t('来源'),
+                  singleSelect: true,
+                  options: [
+                    { label: t('上游'), value: 'upstream' },
+                    { label: t('内置'), value: 'built-in' },
+                  ],
+                },
                 {
                   columnId: 'billingMode',
                   title: t('Mode'),

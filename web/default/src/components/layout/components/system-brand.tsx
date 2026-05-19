@@ -42,18 +42,23 @@ export function SystemBrand(props: SystemBrandProps) {
         to='/'
         aria-label={t('Go to home')}
         className={cn(
-          'text-foreground inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium transition-colors outline-none select-none',
-          'hover:bg-accent focus-visible:ring-ring/40 focus-visible:ring-2'
+          'inline-flex h-9 items-center gap-2 rounded-xl px-2 text-sm font-semibold transition-all duration-300',
+          'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent',
+          'hover:from-primary/20 hover:via-primary/10',
+          'focus-visible:ring-2 focus-visible:ring-primary/50',
+          'border border-primary/10 hover:border-primary/20'
         )}
       >
-        <div className='flex size-5 items-center justify-center overflow-hidden rounded-md'>
+        <div className='flex size-6 items-center justify-center overflow-hidden rounded-lg'>
           <img
             src={logo}
             alt={t('Logo')}
-            className='size-full rounded-md object-cover'
+            className='size-full rounded-lg object-cover'
           />
         </div>
-        <span className='max-w-[12rem] truncate'>{name}</span>
+        <span className='max-w-[12rem] truncate bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent'>
+          {name}
+        </span>
       </Link>
     )
   }

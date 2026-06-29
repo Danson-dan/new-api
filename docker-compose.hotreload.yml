@@ -1,0 +1,56 @@
+# =============================================================================
+# Hot-Reload Development Environment (All-in-Docker)
+# =============================================================================
+# Go 后端: air 监听 .go 文件变更，自动重编译重启（秒级）
+# 前端: Go 直接 serve web/default/dist/，无 HMR（如需更新前端，重新 build 即可）
+#
+# 使用方式:
+#   1. 确保基础服务已启动:
+#      docker compose -f docker-compose.build.yml up -d redis postgres
+#   2. 如果 build 版 new-api 在跑，先停掉（端口冲突）:
+#      docker stop new-api
+#   3. 启动热更新环境:
+#      docker compose -f docker-compose.hotreload.yml up -d --build
+#   4. 访问: http://localhost:3003（前端 + API 都在这个端口）
+#
+# 前端修改后更新:
+#   docker compose -f docker-compose.build.yml run --rm new-api sh -c "cd /build/web/default && npm run build"
+#   或重新 build: docker compose -f docker-compose.build.yml build new-api
+#
+# 停止:
+#   docker compose -f docker-compose.hotreload.yml down
+# =============================================================================
+
+services:
+  new-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.hotreload
+    container_name: new-api-hot
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    volumes:
+      - .:/app
+      - go_mod_cache:/go/pkg/mod
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - SQL_DSN=postgresql://root:123456@new-api-postgres:5432/new-api
+      - REDIS_CONN_STRING=redis://:123456@new-api-redis:6379
+      - TZ=Asia/Shanghai
+      - BATCH_UPDATE_ENABLED=true
+      - NODE_NAME=new-api-hot-1
+    networks:
+      - new-api-network
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
+
+volumes:
+  go_mod_cache:
+    driver: local
+
+networks:
+  new-api-network:
+    external: true

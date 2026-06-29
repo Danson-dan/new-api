@@ -1,0 +1,59 @@
+# Air configuration for Go hot-reload
+# https://github.com/air-verse/air
+
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  # Compile command
+  cmd = "go build -ldflags \"-s -w -X 'github.com/QuantumNous/new-api/common.Version=dev'\" -o ./tmp/new-api ."
+  # Binary to run
+  bin = "./tmp/new-api"
+  # Additional args for the binary
+  args_bin = ["--port", "3000", "--log-dir", "/app/logs"]
+  # Delay before first build (give dependencies time)
+  delay = 1000
+  # Stop signal
+  stop_signal = "SIGINT"
+  # Kill delay before force kill
+  kill_delay = 500
+  # Send interrupt to running bin before killing
+  send_interrupt = true
+
+  # Include file extensions to watch
+  include_ext = ["go", "tpl", "tmpl", "html", "toml", "yaml", "yml", "json"]
+
+  # Exclude directories from watching
+  exclude_dir = [
+    "assets", "tmp", "vendor", "node_modules",
+    "web/default", "web/classic",   # Frontend handled separately by Rsbuild HMR
+    "data", "logs", ".git",
+  ]
+
+  # Exclude unchanged files
+  exclude_unchanged = false
+
+  # Follow symlink
+  follow_symlink = true
+
+  # Log settings
+  full_bin = ""
+
+  # Watch these additional files even if not matching include_ext
+  include_dir = []
+
+  # Exclude specific files
+  exclude_file = []
+
+  # Clean up tmp directory on exit
+  clean_on_exit = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

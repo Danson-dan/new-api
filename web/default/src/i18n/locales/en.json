@@ -4502,6 +4502,15 @@
     "Quick answers to common questions about our platform and services.": "Quick answers to common questions about our platform and services.",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Global Pricing Defaults": "Global Pricing Defaults",
+    "Display price = upstream price × discount / 100 | Actual charge = upstream price × markup": "Display price = upstream price × discount / 100 | Actual charge = upstream price × markup",
+    "Default Display Discount": "Default Display Discount",
+    " zhe": " zhe",
+    "85 = 8.5 zhe. Users see upstream price multiplied by this percentage.": "85 = 8.5 zhe. Users see upstream price multiplied by this percentage.",
+    "Default Actual Markup": "Default Actual Markup",
+    "1.3 = +30%. Actual billing price = upstream price × markup.": "1.3 = +30%. Actual billing price = upstream price × markup.",
+    "Route All Traffic to EasyRouter": "Route All Traffic to EasyRouter",
+    "When enabled, if no channel is available in auto groups, fallback to EasyRouter channels automatically.": "When enabled, if no channel is available in auto groups, fallback to EasyRouter channels automatically."
   }
 }

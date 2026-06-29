@@ -325,6 +325,11 @@ var DefaultDisplayDiscount = 85.0
 // 1.3 = 实际扣费 = 正价 × 1.3
 var DefaultActualMarkup = 1.3
 
+// StandardPriceDivisor 标准正价除数
+// 旧系统 modelRatio * StandardPriceDivisor = $/1M tokens
+// 因此 $/1M tokens / StandardPriceDivisor = modelRatio
+const StandardPriceDivisor = 2.0
+
 // defaultActualMarkupMap 模型级实际加价倍率覆盖
 var defaultActualMarkup = map[string]float64{}
 
@@ -803,7 +808,7 @@ func GetDisplayPriceCopy() map[string]float64 {
 }
 
 // GetDisplayPrice 返回模型的显示价格
-// 如果未配置显示价格，则根据模型倍率计算价格（modelRatio * 2 = $/1M tokens）
+// 如果未配置显示价格，则根据模型倍率计算价格（modelRatio * StandardPriceDivisor = $/1M tokens）
 func GetDisplayPrice(modelName string, printErr bool) (float64, bool) {
 	name := FormatMatchingModelName(modelName)
 
@@ -814,7 +819,7 @@ func GetDisplayPrice(modelName string, printErr bool) (float64, bool) {
 	// 如果未配置显示价格，根据模型倍率计算显示价格
 	modelRatio, success, _ := GetModelRatio(modelName)
 	if success {
-		return modelRatio * 2, true // 转换为 $/1M tokens
+		return modelRatio * StandardPriceDivisor, true // 转换为 $/1M tokens
 	}
 
 	if printErr {
@@ -880,7 +885,7 @@ func GetDisplayDiscountMap() map[string]float64 {
 }
 
 // GetCalculatedDisplayPrice 计算现价 = 正价 × 显示折扣 / 100
-// 如果正价未配置，则回退到旧的 DisplayPrice / modelRatio * 2
+// 如果正价未配置，则回退到旧的 DisplayPrice / modelRatio * StandardPriceDivisor
 func GetCalculatedDisplayPrice(modelName string) float64 {
 	upstreamPrice, hasUpstream := GetUpstreamPrice(modelName)
 	if hasUpstream {
@@ -933,20 +938,20 @@ func GetCalculatedActualPrice(modelName string) float64 {
 	// 回退：使用旧的倍率机制
 	modelRatio, success, _ := GetModelRatio(modelName)
 	if success {
-		return modelRatio * 2
+		return modelRatio * StandardPriceDivisor
 	}
 	return 0
 }
 
 // GetModelRatioFromMarkup 从实际加价计算等效模型倍率，用于兼容旧的扣费系统
-// 旧系统 modelRatio * 2 = $/1M tokens
+// 旧系统 modelRatio * StandardPriceDivisor = $/1M tokens
 // 新系统 upstreamPrice * actualMarkup = $/1M tokens
-// 所以 modelRatio = upstreamPrice * actualMarkup / 2
+// 所以 modelRatio = upstreamPrice * actualMarkup / StandardPriceDivisor
 func GetModelRatioFromMarkup(modelName string) float64 {
 	upstreamPrice, hasUpstream := GetUpstreamPrice(modelName)
 	if hasUpstream {
 		markup := GetActualMarkup(modelName)
-		return upstreamPrice * markup / 2.0
+		return upstreamPrice * markup / StandardPriceDivisor
 	}
 	// 回退到旧倍率
 	ratio, success, _ := GetModelRatio(modelName)

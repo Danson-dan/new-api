@@ -1,5 +1,5 @@
 import { formatCurrencyFromUSD } from '@/lib/currency'
-import { QUOTA_TYPE_VALUES, TOKEN_UNIT_DIVISORS } from '../constants'
+import { QUOTA_TYPE_VALUES, STANDARD_PRICE_DIVISOR, TOKEN_UNIT_DIVISORS } from '../constants'
 import type { PricingModel, TokenUnit, PriceType } from '../types'
 
 // ----------------------------------------------------------------------------
@@ -56,7 +56,15 @@ function getMinGroupRatio(
 }
 
 /**
- * Calculate token price in USD.
+ * Calculate token price in USD (display price, NOT billing price).
+ *
+ * Display formula:
+ *   If UpstreamPrice exists: upstreamPrice × (displayDiscount / 100) × ratio
+ *   Else: modelRatio × STANDARD_PRICE_DIVISOR × ratio
+ *
+ * The backend billing formula uses ActualMarkup instead of DisplayDiscount.
+ * Both MUST stay consistent with StandardPriceDivisor.
+ * @see relay/helper/price.go ModelPriceHelper
  *
  * Returns NaN when the required ratio field is missing/null so callers can
  * skip rendering that price type.
@@ -66,7 +74,10 @@ function calculateTokenPrice(
   type: PriceType,
   ratio: number
 ): number {
-  const base = model.model_ratio * 2 * ratio
+  const hasUpstreamPricing = model.upstream_price != null && model.upstream_price > 0
+  const base = hasUpstreamPricing
+    ? model.upstream_price! * ((model.display_discount ?? 85) / 100) * ratio
+    : model.model_ratio * STANDARD_PRICE_DIVISOR * ratio
 
   switch (type) {
     case 'input':

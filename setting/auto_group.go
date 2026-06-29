@@ -10,6 +10,10 @@ var autoGroups = []string{
 
 var DefaultUseAutoGroup = false
 
+// RouteAllToEasyRouter 全量转发到 EasyRouter 模式
+// 开启后，所有请求在 auto groups 无可用渠道时，自动兜底到 EasyRouter 类型渠道
+var RouteAllToEasyRouter = false
+
 func ContainsAutoGroup(group string) bool {
 	for _, autoGroup := range autoGroups {
 		if autoGroup == group {

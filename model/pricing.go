@@ -36,6 +36,8 @@ type Pricing struct {
 	BillingMode            string                  `json:"billing_mode,omitempty"`
 	BillingExpr            string                  `json:"billing_expr,omitempty"`
 	DisplayDiscount        float64                 `json:"display_discount,omitempty"`
+	UpstreamPrice          float64                 `json:"upstream_price,omitempty"`
+	ActualMarkup           float64                 `json:"actual_markup,omitempty"`
 	PricingVersion         string                  `json:"pricing_version,omitempty"`
 }
 
@@ -340,7 +342,13 @@ func updatePricing() {
 		}
 		if ratio_setting.HasDisplayDiscount(model) {
 			pricing.DisplayDiscount = ratio_setting.GetDisplayDiscount(model)
+		} else {
+			pricing.DisplayDiscount = ratio_setting.DefaultDisplayDiscount
 		}
+		if upstreamPrice, ok := ratio_setting.GetUpstreamPrice(model); ok {
+			pricing.UpstreamPrice = upstreamPrice
+		}
+		pricing.ActualMarkup = ratio_setting.GetActualMarkup(model)
 		pricingMap = append(pricingMap, pricing)
 	}
 

@@ -111,6 +111,14 @@ export const TOKEN_UNIT_DIVISORS = {
   K: 1000,
 } as const
 
+/**
+ * Standard price divisor for converting between model_ratio and $/1M tokens.
+ * model_ratio * STANDARD_PRICE_DIVISOR = $/1M tokens
+ * $/1M tokens / STANDARD_PRICE_DIVISOR = model_ratio
+ * Must match ratio_setting.StandardPriceDivisor on the backend.
+ */
+export const STANDARD_PRICE_DIVISOR = 2.0
+
 /** Default token unit for pricing display */
 export const DEFAULT_TOKEN_UNIT: TokenUnit = 'M'
 

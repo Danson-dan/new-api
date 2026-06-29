@@ -64,10 +64,11 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     Math.max(endpoints.length - 2, 0) +
     Math.max(tags.length - 2, 0)
 
-  const hasDiscount = props.model.display_discount != null
+  const hasDiscount = props.model.display_discount != null || (props.model.upstream_price != null && props.model.upstream_price > 0)
 
-  const formatDiscount = (discount: number) => {
-    const zhe = discount / 10
+  const formatDiscount = (discount: number | null | undefined) => {
+    const d = discount ?? 85
+    const zhe = d / 10
     return zhe === Math.floor(zhe) ? `${zhe}折` : `${zhe.toFixed(1)}折`
   }
 
@@ -124,7 +125,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                     ))}
                     {hasDiscount && (
                       <span className='text-red-600 dark:text-red-400 whitespace-nowrap text-xs font-semibold'>
-                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount) })}
                       </span>
                     )}
                   </>
@@ -133,7 +134,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                     {t('Dynamic Pricing')}
                     {hasDiscount && (
                       <span className='text-red-600 dark:text-red-400 ml-1.5 whitespace-nowrap text-xs font-semibold'>
-                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                        {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount) })}
                       </span>
                     )}
                   </span>
@@ -185,7 +186,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   )}
                   {hasDiscount && (
                     <span className='text-red-600 dark:text-red-400 whitespace-nowrap text-xs font-semibold'>
-                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount) })}
                     </span>
                   )}
                 </>
@@ -202,7 +203,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   / {t('request')}
                   {hasDiscount && (
                     <span className='text-red-600 dark:text-red-400 ml-1.5 whitespace-nowrap text-xs font-semibold'>
-                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount!) })}
+                      {t('Enjoy {{discount}} off', { discount: formatDiscount(props.model.display_discount) })}
                     </span>
                   )}
                 </span>

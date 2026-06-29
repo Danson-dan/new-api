@@ -190,6 +190,102 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	return nil, errors.New("channel not found")
 }
 
+// GetRandomSatisfiedChannelByType 按渠道类型查找可用渠道（不限制 group）
+func GetRandomSatisfiedChannelByType(chanType int, model string, retry int) (*Channel, error) {
+	if !common.MemoryCacheEnabled {
+		return nil, nil
+	}
+
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+
+	var targetChannelsByModel []int
+	for _, ch := range channelsIDM {
+		if ch.Type != chanType || ch.Status != common.ChannelStatusEnabled {
+			continue
+		}
+		if containsModel(ch.Models, model) || containsModel(ch.Models, ratio_setting.FormatMatchingModelName(model)) {
+			targetChannelsByModel = append(targetChannelsByModel, ch.Id)
+		}
+	}
+
+	if len(targetChannelsByModel) == 0 {
+		return nil, nil
+	}
+
+	if len(targetChannelsByModel) == 1 {
+		if channel, ok := channelsIDM[targetChannelsByModel[0]]; ok {
+			return channel, nil
+		}
+		return nil, nil
+	}
+
+	uniquePriorities := make(map[int]bool)
+	for _, channelId := range targetChannelsByModel {
+		if channel, ok := channelsIDM[channelId]; ok {
+			uniquePriorities[int(channel.GetPriority())] = true
+		}
+	}
+	var sortedUniquePriorities []int
+	for priority := range uniquePriorities {
+		sortedUniquePriorities = append(sortedUniquePriorities, priority)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(sortedUniquePriorities)))
+
+	if retry >= len(uniquePriorities) {
+		retry = len(uniquePriorities) - 1
+	}
+	targetPriority := int64(sortedUniquePriorities[retry])
+
+	var sumWeight = 0
+	var targetChannels []*Channel
+	for _, channelId := range targetChannelsByModel {
+		if channel, ok := channelsIDM[channelId]; ok {
+			if channel.GetPriority() == targetPriority {
+				sumWeight += channel.GetWeight()
+				targetChannels = append(targetChannels, channel)
+			}
+		}
+	}
+
+	if len(targetChannels) == 0 {
+		return nil, nil
+	}
+
+	smoothingFactor := 1
+	smoothingAdjustment := 0
+	if sumWeight == 0 {
+		sumWeight = len(targetChannels) * 100
+		smoothingAdjustment = 100
+	} else if sumWeight/len(targetChannels) < 10 {
+		smoothingFactor = 100
+	}
+
+	totalWeight := sumWeight * smoothingFactor
+	randomWeight := rand.Intn(totalWeight)
+
+	for _, channel := range targetChannels {
+		randomWeight -= channel.GetWeight()*smoothingFactor + smoothingAdjustment
+		if randomWeight < 0 {
+			return channel, nil
+		}
+	}
+	return nil, nil
+}
+
+func containsModel(modelsStr string, model string) bool {
+	if modelsStr == "" || model == "" {
+		return false
+	}
+	models := strings.Split(modelsStr, ",")
+	for _, m := range models {
+		if strings.TrimSpace(m) == model {
+			return true
+		}
+	}
+	return false
+}
+
 func CacheGetChannel(id int) (*Channel, error) {
 	if !common.MemoryCacheEnabled {
 		return GetChannelById(id, true)

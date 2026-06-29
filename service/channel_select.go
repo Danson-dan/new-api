@@ -158,5 +158,13 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			return nil, param.TokenGroup, err
 		}
 	}
+	// Fallback to EasyRouter when RouteAllToEasyRouter is enabled
+	if channel == nil && setting.RouteAllToEasyRouter {
+		channel, _ = model.GetRandomSatisfiedChannelByType(
+			constant.ChannelTypeEasyRouter, param.ModelName, param.GetRetry())
+		if channel != nil {
+			selectGroup = "easyrouter"
+		}
+	}
 	return channel, selectGroup, nil
 }

@@ -4502,6 +4502,15 @@
     "Quick answers to common questions about our platform and services.": "关于我们平台和服务的快速解答。",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "Global Pricing Defaults": "全局定价默认值",
+    "Display price = upstream price × discount / 100 | Actual charge = upstream price × markup": "展示价格 = 上游正价 × 折扣 / 100 | 实际扣费 = 上游正价 × 加价倍率",
+    "Default Display Discount": "默认展示折扣",
+    " zhe": " 折",
+    "85 = 8.5 zhe. Users see upstream price multiplied by this percentage.": "85 = 8.5折。用户看到的价格 = 上游正价 × 此百分比。",
+    "Default Actual Markup": "默认实际加价倍率",
+    "1.3 = +30%. Actual billing price = upstream price × markup.": "1.3 = +30%。实际扣费 = 上游正价 × 加价倍率。",
+    "Route All Traffic to EasyRouter": "全量转发至 EasyRouter",
+    "When enabled, if no channel is available in auto groups, fallback to EasyRouter channels automatically.": "开启后，当自动分组中无可用渠道时，自动兜底到 EasyRouter 类型渠道。"
   }
 }

@@ -596,6 +596,70 @@ func SyncUpstreamPreview(c *gin.Context) {
 //  3. 用内置 defaultModelRatio 计算 UpstreamPrice（正价）和 ModelRatio
 //  4. 同时创建 models 表元数据（若模型不存在）
 //  5. 通过 model.UpdateOption 持久化到 options 表 + 更新内存
+
+type upstreamPricingData struct {
+	InputPrice  float64
+	OutputPrice float64
+}
+
+// fetchUpstreamPricing 尝试从 EasyRouter 渠道获取单个模型的定价
+// 优先请求 GET {baseURL}/v1/pricing，解析模型定价信息（含输入和输出价格）
+// 如果定价端点不可用，返回 InputPrice=0 表示回退到本地倍率计算
+func fetchUpstreamPricing(ctx context.Context, client *http.Client, ch *model.Channel, modelName string) upstreamPricingData {
+	baseURL := strings.TrimRight(ch.GetBaseURL(), "/")
+	if baseURL == "" {
+		baseURL = constant.ChannelBaseURLs[ch.Type]
+	}
+	key, _, apiErr := ch.GetNextEnabledKey()
+	if apiErr != nil {
+		return upstreamPricingData{}
+	}
+
+	pricingURL := baseURL + "/v1/pricing"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pricingURL, nil)
+	if err != nil {
+		return upstreamPricingData{}
+	}
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(key))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return upstreamPricingData{}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return upstreamPricingData{}
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return upstreamPricingData{}
+	}
+
+	var pricingResp struct {
+		Data []struct {
+			Model            string  `json:"model"`
+			PricePerMInput   float64 `json:"price_per_m_input"`
+			PricePerMOutput  float64 `json:"price_per_m_output,omitempty"`
+		} `json:"data"`
+	}
+	if err := common.Unmarshal(body, &pricingResp); err != nil {
+		return upstreamPricingData{}
+	}
+
+	for _, item := range pricingResp.Data {
+		if item.Model == modelName && item.PricePerMInput > 0 {
+			return upstreamPricingData{
+				InputPrice:  item.PricePerMInput,
+				OutputPrice: item.PricePerMOutput,
+			}
+		}
+	}
+	return upstreamPricingData{}
+}
+
 func SyncUpstreamModelPricing(c *gin.Context) {
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 30)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(timeoutSec)*time.Second)
@@ -705,22 +769,31 @@ func SyncUpstreamModelPricing(c *gin.Context) {
 				}
 			}
 
-			normalizedName := ratio_setting.FormatMatchingModelName(modelName)
-			var ratio float64
-			var found bool
-			if r, ok := defaultRatios[normalizedName]; ok {
-				ratio = r
-				found = true
-			} else if r, ok := defaultRatios[modelName]; ok {
-				ratio = r
-				found = true
+			// 尝试从 EasyRouter 获取上游实际定价，失败则回退到本地倍率计算
+			if pricing := fetchUpstreamPricing(ctx, client, ch, modelName); pricing.InputPrice > 0 {
+				upstreamPrices[modelName] = pricing.InputPrice
+				modelRatios[modelName] = pricing.InputPrice / ratio_setting.StandardPriceDivisor
+				// 如果有上游输出价格且本地未配置 completion ratio，则自动推导
+				if _, hasComp := completionRatios[modelName]; !hasComp && pricing.OutputPrice > 0 && pricing.OutputPrice != pricing.InputPrice {
+					completionRatios[modelName] = pricing.OutputPrice / pricing.InputPrice
+				}
+			} else {
+				normalizedName := ratio_setting.FormatMatchingModelName(modelName)
+				var ratio float64
+				var found bool
+				if r, ok := defaultRatios[normalizedName]; ok {
+					ratio = r
+					found = true
+				} else if r, ok := defaultRatios[modelName]; ok {
+					ratio = r
+					found = true
+				}
+				if !found || ratio <= 0 {
+					continue
+				}
+				upstreamPrices[modelName] = ratio * ratio_setting.StandardPriceDivisor
+				modelRatios[modelName] = ratio
 			}
-			if !found || ratio <= 0 {
-				continue
-			}
-
-			upstreamPrices[modelName] = ratio * 2.0
-			modelRatios[modelName] = ratio
 			if compRatio := ratio_setting.GetCompletionRatio(modelName); compRatio > 0 {
 				completionRatios[modelName] = compRatio
 			}

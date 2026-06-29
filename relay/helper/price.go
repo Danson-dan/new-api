@@ -104,12 +104,12 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		}
 
 		// 优先使用 UpstreamPrice + ActualMarkup 计算实际扣费倍率
-		upstreamPrice, hasUpstream := ratio_setting.GetUpstreamPrice(info.OriginModelName)
-		if hasUpstream {
-			actualMarkup := ratio_setting.GetActualMarkup(info.OriginModelName)
-			// 等效倍率：正价 × 加价倍率 / 2 = modelRatio
-			marketRatio := upstreamPrice * actualMarkup / 2.0
-			modelRatio = marketRatio
+		// 公式: modelRatio = upstreamPrice * actualMarkup / StandardPriceDivisor
+		// 实际扣费 $/1M tokens = upstreamPrice * actualMarkup
+		// 注意：前端展示价格用的是 DisplayDiscount，此处扣费用的是 ActualMarkup，两者独立
+		// 前端对应公式见 web/default/src/features/pricing/lib/price.ts calculateTokenPrice
+		if _, hasUpstream := ratio_setting.GetUpstreamPrice(info.OriginModelName); hasUpstream {
+			modelRatio = ratio_setting.GetModelRatioFromMarkup(info.OriginModelName)
 		}
 
 		completionRatio = ratio_setting.GetCompletionRatio(info.OriginModelName)

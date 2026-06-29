@@ -7,6 +7,17 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { resetModelRatios } from '../api'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -129,6 +140,8 @@ const modelSchema = z.object({
       })
     }
   }),
+  DefaultDisplayDiscount: z.number().min(1).max(100),
+  DefaultActualMarkup: z.number().min(0.01).max(100),
   ExposeRatioEnabled: z.boolean(),
   BillingMode: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
@@ -202,6 +215,7 @@ const groupSchema = z.object({
     }
   }),
   DefaultUseAutoGroup: z.boolean(),
+  RouteAllToEasyRouter: z.boolean(),
   GroupSpecialUsableGroup: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
     if (!result.valid) {
@@ -279,6 +293,8 @@ export function RatioSettingsCard({
     UpstreamPrice: normalizeJsonString(modelDefaults.UpstreamPrice),
     DisplayDiscount: normalizeJsonString(modelDefaults.DisplayDiscount),
     ActualMarkup: normalizeJsonString(modelDefaults.ActualMarkup),
+    DefaultDisplayDiscount: modelDefaults.DefaultDisplayDiscount,
+    DefaultActualMarkup: modelDefaults.DefaultActualMarkup,
     ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
     BillingMode: normalizeJsonString(modelDefaults.BillingMode),
     BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
@@ -291,6 +307,7 @@ export function RatioSettingsCard({
     GroupGroupRatio: normalizeJsonString(groupDefaults.GroupGroupRatio),
     AutoGroups: normalizeJsonString(groupDefaults.AutoGroups),
     DefaultUseAutoGroup: groupDefaults.DefaultUseAutoGroup,
+    RouteAllToEasyRouter: groupDefaults.RouteAllToEasyRouter,
     GroupSpecialUsableGroup: normalizeJsonString(
       groupDefaults.GroupSpecialUsableGroup
     ),
@@ -349,6 +366,8 @@ export function RatioSettingsCard({
       UpstreamPrice: normalizeJsonString(modelDefaults.UpstreamPrice),
       DisplayDiscount: normalizeJsonString(modelDefaults.DisplayDiscount),
       ActualMarkup: normalizeJsonString(modelDefaults.ActualMarkup),
+      DefaultDisplayDiscount: modelDefaults.DefaultDisplayDiscount,
+      DefaultActualMarkup: modelDefaults.DefaultActualMarkup,
       ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
       BillingMode: normalizeJsonString(modelDefaults.BillingMode),
       BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
@@ -382,6 +401,7 @@ export function RatioSettingsCard({
       GroupGroupRatio: normalizeJsonString(groupDefaults.GroupGroupRatio),
       AutoGroups: normalizeJsonString(groupDefaults.AutoGroups),
       DefaultUseAutoGroup: groupDefaults.DefaultUseAutoGroup,
+      RouteAllToEasyRouter: groupDefaults.RouteAllToEasyRouter,
       GroupSpecialUsableGroup: normalizeJsonString(
         groupDefaults.GroupSpecialUsableGroup
       ),
@@ -415,6 +435,8 @@ export function RatioSettingsCard({
         UpstreamPrice: normalizeJsonString(values.UpstreamPrice),
         DisplayDiscount: normalizeJsonString(values.DisplayDiscount),
         ActualMarkup: normalizeJsonString(values.ActualMarkup),
+        DefaultDisplayDiscount: values.DefaultDisplayDiscount,
+        DefaultActualMarkup: values.DefaultActualMarkup,
         ExposeRatioEnabled: values.ExposeRatioEnabled,
         BillingMode: normalizeJsonString(values.BillingMode),
         BillingExpr: normalizeJsonString(values.BillingExpr),
@@ -444,6 +466,7 @@ export function RatioSettingsCard({
         GroupGroupRatio: normalizeJsonString(values.GroupGroupRatio),
         AutoGroups: normalizeJsonString(values.AutoGroups),
         DefaultUseAutoGroup: values.DefaultUseAutoGroup,
+        RouteAllToEasyRouter: values.RouteAllToEasyRouter,
         GroupSpecialUsableGroup: normalizeJsonString(
           values.GroupSpecialUsableGroup
         ),
@@ -496,22 +519,114 @@ export function RatioSettingsCard({
   const renderTabContent = (tab: RatioTabId) => {
     if (tab === 'models') {
       return (
-        <ModelRatioForm
-          form={modelForm}
-          onSave={saveModelRatios}
-          onReset={handleResetRatios}
-          isSaving={updateOption.isPending}
-          isResetting={resetMutation.isPending}
-        />
+        <div className='space-y-6'>
+          {/* Global pricing defaults */}
+          <div className='rounded-lg border p-4 space-y-4'>
+            <div>
+              <h4 className='text-sm font-semibold'>{t('Global Pricing Defaults')}</h4>
+              <p className='text-muted-foreground text-xs mt-1'>
+                {t('Display price = upstream price × discount / 100 | Actual charge = upstream price × markup')}
+              </p>
+            </div>
+            <div className='grid grid-cols-2 gap-4'>
+              <FormField
+                control={modelForm.control}
+                name='DefaultDisplayDiscount'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Default Display Discount')}</FormLabel>
+                    <div className='flex items-center gap-2'>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          min={1}
+                          max={100}
+                          step={1}
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <span className='text-muted-foreground whitespace-nowrap text-sm'>
+                        ({((field.value ?? 85) / 10).toFixed(1)}{t(' zhe')})
+                      </span>
+                    </div>
+                    <FormDescription>
+                      {t('85 = 8.5 zhe. Users see upstream price multiplied by this percentage.')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={modelForm.control}
+                name='DefaultActualMarkup'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Default Actual Markup')}</FormLabel>
+                    <div className='flex items-center gap-2'>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          min={0.01}
+                          max={100}
+                          step={0.1}
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value}
+                        />
+                      </FormControl>
+                      <span className='text-muted-foreground whitespace-nowrap text-sm'>
+                        (×{field.value ?? 1.3})
+                      </span>
+                    </div>
+                    <FormDescription>
+                      {t('1.3 = +30%. Actual billing price = upstream price × markup.')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+          <ModelRatioForm
+            form={modelForm}
+            onSave={saveModelRatios}
+            onReset={handleResetRatios}
+            isSaving={updateOption.isPending}
+            isResetting={resetMutation.isPending}
+          />
+        </div>
       )
     }
     if (tab === 'groups') {
       return (
-        <GroupRatioForm
-          form={groupForm}
-          onSave={saveGroupRatios}
-          isSaving={updateOption.isPending}
-        />
+        <div className='space-y-6'>
+          <FormField
+            control={groupForm.control}
+            name='RouteAllToEasyRouter'
+            render={({ field }) => (
+              <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
+                <div className='space-y-0.5'>
+                  <FormLabel className='text-base'>
+                    {t('Route All Traffic to EasyRouter')}
+                  </FormLabel>
+                  <FormDescription>
+                    {t('When enabled, if no channel is available in auto groups, fallback to EasyRouter channels automatically.')}
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <GroupRatioForm
+            form={groupForm}
+            onSave={saveGroupRatios}
+            isSaving={updateOption.isPending}
+          />
+        </div>
       )
     }
     if (tab === 'tool-prices') {

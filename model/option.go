@@ -122,6 +122,7 @@ func InitOptionMap() {
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
 	common.OptionMap["DefaultUseAutoGroup"] = strconv.FormatBool(setting.DefaultUseAutoGroup)
+	common.OptionMap["RouteAllToEasyRouter"] = strconv.FormatBool(setting.RouteAllToEasyRouter)
 	common.OptionMap["PayMethods"] = operation_setting.PayMethods2JsonString()
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
@@ -333,6 +334,8 @@ func updateOptionMap(key string, value string) (err error) {
 			system_setting.WorkerAllowHttpImageRequestEnabled = boolValue
 		case "DefaultUseAutoGroup":
 			setting.DefaultUseAutoGroup = boolValue
+		case "RouteAllToEasyRouter":
+			setting.RouteAllToEasyRouter = boolValue
 		case "ExposeRatioEnabled":
 			ratio_setting.SetExposeRatioEnabled(boolValue)
 		}
@@ -567,6 +570,14 @@ func updateOptionMap(key string, value string) (err error) {
 		// WaffoPayMethods is read directly from OptionMap via setting.GetWaffoPayMethods().
 		// The value is already stored in OptionMap at the top of this function (line: common.OptionMap[key] = value).
 		// No additional in-memory variable to update.
+	}
+	// Invalidate pricing cache for pricing-related option changes
+	switch key {
+	case "ModelRatio", "CompletionRatio", "ModelPrice",
+		"CacheRatio", "CreateCacheRatio", "ImageRatio", "AudioRatio", "AudioCompletionRatio",
+		"DisplayPrice", "UpstreamPrice", "DisplayDiscount", "ActualMarkup",
+		"DefaultDisplayDiscount", "DefaultActualMarkup":
+		InvalidatePricingCache()
 	}
 	return err
 }

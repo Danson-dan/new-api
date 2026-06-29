@@ -1050,10 +1050,10 @@ func SaveUpstreamPriceFromSync(c *gin.Context) {
 		}
 	}
 
-	// 计算上游正价：model_ratio * 2 = $/1M tokens
+	// 计算上游正价：model_ratio * StandardPriceDivisor = $/1M tokens
 	upstreamPrices := make(map[string]float64)
 	for modelName, ratio := range req.ModelRatios {
-		upstreamPrices[modelName] = ratio * 2.0
+		upstreamPrices[modelName] = ratio * ratio_setting.StandardPriceDivisor
 	}
 
 	priceJSON, err := json.Marshal(upstreamPrices)

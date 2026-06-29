@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -119,6 +121,8 @@ func Query(params QueryParams) (QueryResult, error) {
 		return true
 	})
 
+	mergeRedisActiveBuckets(merged, params, startTs, endTs)
+
 	return buildQueryResult(params.Model, merged), nil
 }
 
@@ -166,6 +170,8 @@ func QuerySummaryAll(hours int) (SummaryAllResult, error) {
 		totals[k.model] = cur
 		return true
 	})
+
+	mergeRedisActiveBucketsAll(totals, startTs, endTs)
 
 	models := make([]ModelSummary, 0, len(totals))
 	for name, total := range totals {
@@ -336,21 +342,94 @@ func recordRedis(key bucketKey, sample Sample) {
 }
 
 func mergeRedisActiveBuckets(merged map[bucketKey]counters, params QueryParams, startTs int64, endTs int64) {
-	if !common.RedisEnabled || common.RDB == nil || params.Model == "" || params.Group == "" {
+	if !common.RedisEnabled || common.RDB == nil || params.Model == "" {
 		return
 	}
 	active := bucketStart(time.Now().Unix())
 	if active < startTs || active > endTs {
 		return
 	}
-	key := bucketKey{model: params.Model, group: params.Group, bucketTs: active}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	values, err := common.RDB.HGetAll(ctx, redisBucketKey(key)).Result()
-	if err != nil || len(values) == 0 {
+
+	if params.Group != "" {
+		values, err := common.RDB.HGetAll(ctx, redisBucketKey(bucketKey{model: params.Model, group: params.Group, bucketTs: active})).Result()
+		if err != nil || len(values) == 0 {
+			return
+		}
+		mergeCounters(merged, bucketKey{model: params.Model, group: params.Group, bucketTs: active}, redisCounters(values))
 		return
 	}
-	mergeCounters(merged, key, redisCounters(values))
+
+	pattern := fmt.Sprintf("perf:%s:*:%d", params.Model, active)
+	iter := common.RDB.Scan(ctx, 0, pattern, 100).Iterator()
+	for iter.Next(ctx) {
+		m, g, ts := parseRedisBucketKey(iter.Val())
+		if m == params.Model {
+			values, err := common.RDB.HGetAll(ctx, iter.Val()).Result()
+			if err != nil || len(values) == 0 {
+				continue
+			}
+			mergeCounters(merged, bucketKey{model: m, group: g, bucketTs: ts}, redisCounters(values))
+		}
+	}
+}
+
+func mergeRedisActiveBucketsAll(totals map[string]counters, startTs int64, endTs int64) {
+	if !common.RedisEnabled || common.RDB == nil {
+		return
+	}
+	active := bucketStart(time.Now().Unix())
+	if active < startTs || active > endTs {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	pattern := fmt.Sprintf("perf:*:*:%d", active)
+	iter := common.RDB.Scan(ctx, 0, pattern, 100).Iterator()
+	for iter.Next(ctx) {
+		m, _, _ := parseRedisBucketKey(iter.Val())
+		if m == "" {
+			continue
+		}
+		values, err := common.RDB.HGetAll(ctx, iter.Val()).Result()
+		if err != nil || len(values) == 0 {
+			continue
+		}
+		snap := redisCounters(values)
+		if snap.requestCount == 0 {
+			continue
+		}
+		cur := totals[m]
+		cur.requestCount += snap.requestCount
+		cur.successCount += snap.successCount
+		cur.totalLatencyMs += snap.totalLatencyMs
+		cur.outputTokens += snap.outputTokens
+		cur.generationMs += snap.generationMs
+		totals[m] = cur
+	}
+}
+
+func parseRedisBucketKey(redisKey string) (model string, group string, bucketTs int64) {
+	rest := strings.TrimPrefix(redisKey, "perf:")
+	lastColon := strings.LastIndex(rest, ":")
+	if lastColon < 0 {
+		return
+	}
+	ts, err := strconv.ParseInt(rest[lastColon+1:], 10, 64)
+	if err != nil {
+		return
+	}
+	bucketTs = ts
+	rest = rest[:lastColon]
+	secondLastColon := strings.LastIndex(rest, ":")
+	if secondLastColon < 0 {
+		return
+	}
+	group = rest[secondLastColon+1:]
+	model = rest[:secondLastColon]
+	return
 }
 
 func redisBucketKey(key bucketKey) string {
